@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
 
 // Add this near the top if apiBase is not available from context or props
-const apiBase = 'http://localhost:3001'; // <-- Use this port for all API calls
+// const apiBase = 'http://localhost:3001'; // <-- Use this port for all API calls
 
 const SuperAdminDashboard = () => {
     const [users, setUsers] = useState([]);
@@ -16,7 +16,7 @@ const SuperAdminDashboard = () => {
     const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "User" });
     const [loginTime, setLoginTime] = useState("");
 
-    const { token, logout } = useAuth();
+    const { token, logout, apiBase } = useAuth();
     const navigate = useNavigate();
 
     // --- SuperAdmin login time activity ---
@@ -36,6 +36,15 @@ const SuperAdminDashboard = () => {
             }
         }
     }, [token]);
+
+
+
+    // Fetch users and admins on component mount
+    // useEffect(() => {
+    //     if (token) {
+    //         fetchData();
+    //     }
+    // }, [token]);
 
     // Fetch data - for SuperAdmin dashboard; use the correct endpoints
     const fetchData = async () => {
