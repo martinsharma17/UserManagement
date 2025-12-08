@@ -1,0 +1,1 @@
+- [ ] Edit AUTH-Frontend/src/context/AuthContext.jsx to handle JWT token from URL query parameter on initialization
