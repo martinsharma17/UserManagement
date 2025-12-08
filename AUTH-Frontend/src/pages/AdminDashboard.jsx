@@ -25,7 +25,7 @@ const AdminDashboard = () => {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`${apiBase}/Admin/users`, {
+            const response = await fetch(`${apiBase}/api/Admin/users`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
@@ -51,13 +51,19 @@ const AdminDashboard = () => {
         }
 
         try {
-            const response = await fetch(`${apiBase}/Admin/AddUser`, {
+            const response = await fetch(`${apiBase}/api/User`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`
                 },
-                body: JSON.stringify(newUser)
+                // body: JSON.stringify(newUser)
+                body: JSON.stringify({
+                    userName: newUser.name,
+                    email: newUser.email,
+                    password: newUser.password,
+                    role: "User"
+                })
             });
 
             if (response.ok) {
@@ -77,7 +83,7 @@ const AdminDashboard = () => {
         if (!window.confirm("Are you sure you want to delete this user?")) return;
 
         try {
-            const response = await fetch(`${apiBase}/Admin/DeleteUser/${userId}`, {
+            const response = await fetch(`${apiBase}/api/users/${userId}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });

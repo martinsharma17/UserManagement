@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
 
 // Add this near the top if apiBase is not available from context or props
-const apiBase = 'http://localhost:3001/api'; // <-- Use this port for all API calls
+const apiBase = 'http://localhost:3001'; // <-- Use this port for all API calls
 
 const SuperAdminDashboard = () => {
     const [users, setUsers] = useState([]);
@@ -15,7 +15,7 @@ const SuperAdminDashboard = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "User" });
     const [loginTime, setLoginTime] = useState("");
-    
+
     const { token, logout } = useAuth();
     const navigate = useNavigate();
 
@@ -42,10 +42,10 @@ const SuperAdminDashboard = () => {
         setLoading(true);
         try {
             const [usersRes, adminsRes] = await Promise.all([
-                fetch(`${apiBase}/Roles/AllUsers`, {
+                fetch(`${apiBase}/api/Roles/AllUsers`, {
                     headers: { Authorization: `Bearer ${token}` },
                 }),
-                fetch(`${apiBase}/Roles/AllAdmins`, {
+                fetch(`${apiBase}/api/Roles/AllAdmins`, {
                     headers: { Authorization: `Bearer ${token}` },
                 })
             ]);
@@ -83,15 +83,15 @@ const SuperAdminDashboard = () => {
                     setError(`Admins API error: ${adminsRes.status} ${adminsRes.statusText} - ${text}`);
                 }
             } catch (err) {
-                setError((prev) => (prev ? prev+"; " : "") + `Admins API parse error: ${err}`);
+                setError((prev) => (prev ? prev + "; " : "") + `Admins API parse error: ${err}`);
             }
             setUsers(usersData);
             setAdmins(adminsData);
-            if(!usersData || usersData.length === 0) {
-              console.error('SuperAdminDashboard: No users retrieved from backend.', usersData);
+            if (!usersData || usersData.length === 0) {
+                console.error('SuperAdminDashboard: No users retrieved from backend.', usersData);
             }
-            if(!adminsData || adminsData.length === 0) {
-              console.error('SuperAdminDashboard: No admins retrieved from backend.', adminsData);
+            if (!adminsData || adminsData.length === 0) {
+                console.error('SuperAdminDashboard: No admins retrieved from backend.', adminsData);
             }
         } catch (err) {
             setError("Network/API call failed: " + err);
@@ -107,7 +107,8 @@ const SuperAdminDashboard = () => {
             return;
         }
         try {
-            const response = await fetch(`${apiBase}/user`, {
+            console.log('API Base:', apiBase);
+            const response = await fetch(`${apiBase}/api/User`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -138,7 +139,7 @@ const SuperAdminDashboard = () => {
         if (!window.confirm(`Are you sure you want to delete this ${isAdmin ? 'admin' : 'user'}?`)) return;
 
         try {
-            const response = await fetch(`${apiBase}/SuperAdmin/delete/${id}`, {
+            const response = await fetch(`${apiBase}/api/SuperAdmin/delete/${id}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -158,7 +159,7 @@ const SuperAdminDashboard = () => {
     // Make user admin
     const handleMakeAdmin = async (userId) => {
         try {
-            const response = await fetch(`${apiBase}/SuperAdmin/promote/${userId}`, {
+            const response = await fetch(`${apiBase}/api/SuperAdmin/promote/${userId}`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -180,7 +181,7 @@ const SuperAdminDashboard = () => {
         if (!window.confirm("Are you sure you want to revoke admin access? This will demote them to a regular user.")) return;
 
         try {
-            const response = await fetch(`${apiBase}/SuperAdmin/revoke-admin/${adminId}`, {
+            const response = await fetch(`${apiBase}/api/SuperAdmin/revoke-admin/${adminId}`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -220,7 +221,7 @@ const SuperAdminDashboard = () => {
                         <h1 className="text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
                         <p className="text-gray-600 mt-2">Manage all users and administrators</p>
                         {loginTime && (
-                          <p className="text-sm mt-1 text-gray-500">Last login: {loginTime}</p>
+                            <p className="text-sm mt-1 text-gray-500">Last login: {loginTime}</p>
                         )}
                     </div>
                     <div className="flex space-x-3 mt-4 md:mt-0">
@@ -277,26 +278,26 @@ const SuperAdminDashboard = () => {
                                     type="text"
                                     placeholder="Name"
                                     value={newUser.name}
-                                    onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+                                    onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                                 />
                                 <input
                                     type="email"
                                     placeholder="Email"
                                     value={newUser.email}
-                                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                                 />
                                 <input
                                     type="password"
                                     placeholder="Password"
                                     value={newUser.password}
-                                    onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                                 />
                                 <select
                                     value={newUser.role}
-                                    onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+                                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                                 >
                                     <option value="User">User</option>

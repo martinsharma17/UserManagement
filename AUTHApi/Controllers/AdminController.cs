@@ -21,13 +21,39 @@ public class AdminController : ControllerBase
         _userManager = userManager;
     }
     // GET: api/Admin/users
-    [HttpGet("users")]
-    public IActionResult GetUsers()
-    {
-        var users = _userManager.Users.Select(u => new { u.Id, u.Email, u.UserName }).ToList();
-        return Ok(users);
-    }
+    // [HttpGet("users")]
+    // public IActionResult GetUsers()
+    // {
+    //     var users = _userManager.Users.Select(u => new { u.Id, u.Email, u.UserName }).ToList();
+    //     return Ok(users);
+    // }
 
+    // GET: api/Admin/users - Returns only regular Users (not Admins/SuperAdmins)
+    [HttpGet("users")]
+    public async Task<IActionResult> GetUsers()
+    {
+        var allUsers = _userManager.Users.ToList();
+        var regularUsers = new System.Collections.Generic.List<object>();
+
+        foreach (var u in allUsers)
+        {
+            var roles = await _userManager.GetRolesAsync(u);
+            // Only include users who are NOT Admin or SuperAdmin
+            if (!roles.Contains("Admin") && !roles.Contains("SuperAdmin"))
+            {
+                regularUsers.Add(new
+                {
+                    u.Id,
+                    u.Email,
+                    u.UserName,
+                    Name = u.UserName,
+                    Roles = roles
+                });
+            }
+        }
+
+        return Ok(regularUsers);
+    }
     // Optionally: Admin can view their own profile
     [HttpGet("profile")]
     public async Task<IActionResult> GetProfile()

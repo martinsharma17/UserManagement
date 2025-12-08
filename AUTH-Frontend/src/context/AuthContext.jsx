@@ -41,53 +41,55 @@ export const AuthProvider = ({ children }) => {
         return null;
     }); // Backend user: { id, email, roles }
     const [loading, setLoading] = useState(true); // True on mount for splash prevention
+    // API Base URL from environment variable or default
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
     // Effect: Runs on mount - Restore user if token exists, or check URL for Google login token.
     // Why useEffect? Side-effect free component; handles async validation.
     useEffect(() => {
         const initAuth = async () => {
             console.log('Auth init effect running. Current token:', token);
-            
+
             // Check URL for Google login token
             const urlParams = new URLSearchParams(window.location.search);
             const urlToken = urlParams.get('token');
-            
+
             if (urlToken) {
                 console.log('Token found in URL from Google login');
                 try {
                     const decodedToken = jwtDecode(urlToken);
                     console.log('Decoded Google login token:', decodedToken);
-                    
+
                     // Extract roles - try multiple claim formats
-                    const roles = decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] 
-                                || decodedToken["role"] 
-                                || decodedToken["roles"]
-                                || decodedToken["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role"];
+                    const roles = decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']
+                        || decodedToken["role"]
+                        || decodedToken["roles"]
+                        || decodedToken["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role"];
                     const rolesArray = Array.isArray(roles) ? roles : (roles ? [roles] : []);
-                    
+
                     localStorage.setItem('authToken', urlToken);
                     localStorage.setItem('userRoles', JSON.stringify(rolesArray));
-                    
+
                     // Extract user data from token
                     const userEmail = decodedToken.email || decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || '';
                     const userId = decodedToken.sub || decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || '';
-                    const userName = decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] 
-                                   || decodedToken.name 
-                                   || decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname']
-                                   || '';
+                    const userName = decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name']
+                        || decodedToken.name
+                        || decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname']
+                        || '';
                     // Try multiple ways to get picture from token
-                    const userPicture = decodedToken.picture 
-                                     || decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/picture']
-                                     || decodedToken['urn:google:picture']
-                                     || null;
-                    
+                    const userPicture = decodedToken.picture
+                        || decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/picture']
+                        || decodedToken['urn:google:picture']
+                        || null;
+
                     console.log('Full decoded token:', decodedToken);
                     console.log('Extracted user data:', { userId, userEmail, userName, userPicture, rolesArray });
                     console.log('Picture value:', userPicture);
-                    
+
                     setToken(urlToken);
                     setUser({ id: userId, email: userEmail, name: userName, roles: rolesArray, picture: userPicture });
-                    
+
                     // Clean URL
                     window.history.replaceState({}, document.title, window.location.pathname);
                     console.log('Google login successful. User state set:', { id: userId, email: userEmail, name: userName, picture: userPicture, roles: rolesArray });
@@ -187,6 +189,8 @@ export const AuthProvider = ({ children }) => {
         loading,    // For spinners/skeletons
         login,      // Function to call
         logout,     // Function to call
+        apiBase    // Expose API base URL
+
     };
 
     // Render: If loading, show nothing (or spinner); else provide context.

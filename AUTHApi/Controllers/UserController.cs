@@ -1,16 +1,17 @@
-// Controllers/UserController.cs
+using AUTHApi.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using AUTHApi.Data;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize] // any authenticated user
 public class UserController : ControllerBase
 {
-    private readonly UserManager<IdentityUser> _userManager;
-    public UserController(UserManager<IdentityUser> userManager) => _userManager = userManager;
+    private readonly UserManager<ApplicationUser> _userManager;
+    public UserController(UserManager<ApplicationUser> userManager) => _userManager = userManager;
 
     // GET: api/User/profile
     [HttpGet("profile")]
@@ -45,7 +46,7 @@ public class UserController : ControllerBase
     [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserModel model)
     {
-        var user = new IdentityUser { UserName = model.UserName, Email = model.Email };
+        var user = new ApplicationUser { UserName = model.UserName, Email = model.Email };
         var result = await _userManager.CreateAsync(user, model.Password);
         if (!result.Succeeded) return BadRequest(result.Errors);
 
