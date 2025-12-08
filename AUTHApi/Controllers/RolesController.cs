@@ -7,11 +7,11 @@ using System.Security.Claims; // Added this using directive
 
 namespace AUTHApi.Controllers
 {
-   
+
     /// Controller for managing roles
     /// Base URL: /api/Roles
     /// IMPORTANT: All endpoints require Admin role
-   
+
     [Route("api/[controller]")]
     [ApiController]
     [Authorize(Policy = "AdminOnly")]  // Only Admins can access this controller
@@ -26,10 +26,10 @@ namespace AUTHApi.Controllers
             _userManager = userManager;
         }
 
-       
+
         /// Get all roles in the system
         /// GET /api/Roles
-   
+
         [HttpGet]
         public IActionResult GetAllRoles()
         {
@@ -101,10 +101,10 @@ namespace AUTHApi.Controllers
             return Ok(new { success = true, users = userList });
         }
 
-     
+
         /// Assign a role to a user
         /// POST /api/Roles/AssignRole
- 
+
         [HttpPost("AssignRole")]
         public async Task<IActionResult> AssignRoleToUser([FromBody] AssignRoleModel model)
         {
@@ -144,9 +144,9 @@ namespace AUTHApi.Controllers
 
             return BadRequest(new { success = false, message = "Failed to assign role", errors = result.Errors });
         }
-         
+
         /// Remove a role from a user
-    
+
         [HttpPost("RemoveRole")]
         public async Task<IActionResult> RemoveRoleFromUser([FromBody] AssignRoleModel model)
         {
@@ -179,10 +179,10 @@ namespace AUTHApi.Controllers
 
             return BadRequest(new { success = false, message = "Failed to remove role", errors = result.Errors });
         }
- 
+
         /// Get all roles for a specific user
         /// GET /api/Roles/UserRoles/{email}
-       
+
         [HttpGet("UserRoles/{email}")]
         public async Task<IActionResult> GetUserRoles(string email)
         {
@@ -196,9 +196,9 @@ namespace AUTHApi.Controllers
             return Ok(new { success = true, email = email, roles = roles });
         }
     }
- 
+
     /// Model for assigning/removing roles
-  
+
     public class AssignRoleModel
     {
         public string Email { get; set; } = string.Empty;

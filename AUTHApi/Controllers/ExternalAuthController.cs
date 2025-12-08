@@ -46,7 +46,7 @@ namespace AUTHApi.Controllers
         public async Task<IActionResult> GoogleResponse()
         {
             var authenticateResult = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
-            
+
             if (!authenticateResult.Succeeded)
             {
                 return Redirect("http://localhost:5173/login?error=Google+login+failed");
@@ -54,26 +54,26 @@ namespace AUTHApi.Controllers
 
             var email = authenticateResult.Principal.FindFirst(ClaimTypes.Email)?.Value;
             var name = authenticateResult.Principal.FindFirst(ClaimTypes.Name)?.Value;
-            
+
             // Get Google profile picture - try multiple claim types
             var picture = authenticateResult.Principal.FindFirst("picture")?.Value;
-            
+
             // Debug: Log all claims to see what Google provides
             var allClaims = authenticateResult.Principal.Claims.Select(c => $"{c.Type}: {c.Value}").ToList();
             Console.WriteLine("Google OAuth Claims: " + string.Join(", ", allClaims));
-            
+
             // If picture not found, try alternative claim types
             if (string.IsNullOrEmpty(picture))
             {
                 picture = authenticateResult.Principal.FindFirst("urn:google:picture")?.Value
                          ?? authenticateResult.Principal.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/picture")?.Value;
-                
+
                 // Search through all claims for picture-related claims
                 if (string.IsNullOrEmpty(picture))
                 {
                     foreach (var claim in authenticateResult.Principal.Claims)
                     {
-                        if (claim.Type.Contains("picture", StringComparison.OrdinalIgnoreCase) || 
+                        if (claim.Type.Contains("picture", StringComparison.OrdinalIgnoreCase) ||
                             claim.Type.Contains("image", StringComparison.OrdinalIgnoreCase) ||
                             claim.Type.Contains("photo", StringComparison.OrdinalIgnoreCase))
                         {
@@ -84,7 +84,7 @@ namespace AUTHApi.Controllers
                     }
                 }
             }
-            
+
             // If picture still not found, fetch from Google UserInfo endpoint
             if (string.IsNullOrEmpty(picture))
             {
@@ -120,7 +120,7 @@ namespace AUTHApi.Controllers
                     Console.WriteLine($"Error fetching Google UserInfo: {ex.Message}");
                 }
             }
-            
+
             Console.WriteLine($"Extracted Google data - Email: {email}, Name: {name}, Picture: {picture}");
 
             if (string.IsNullOrEmpty(email))
@@ -132,18 +132,18 @@ namespace AUTHApi.Controllers
             var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
             {
-                user = new ApplicationUser 
-                { 
-                    UserName = email, 
-                    Email = email, 
-                    Name = name ?? email.Split('@')[0] 
+                user = new ApplicationUser
+                {
+                    UserName = email,
+                    Email = email,
+                    Name = name ?? email.Split('@')[0]
                 };
                 var createResult = await _userManager.CreateAsync(user);
                 if (!createResult.Succeeded)
                 {
                     return Redirect($"http://localhost:5173/login?error={Uri.EscapeDataString(string.Join(", ", createResult.Errors.Select(e => e.Description)))}");
                 }
-                
+
                 // Assign default role
                 if (await _roleManager.RoleExistsAsync("User"))
                 {

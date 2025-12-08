@@ -37,14 +37,12 @@ const SuperAdminDashboard = () => {
         }
     }, [token]);
 
-
-
     // Fetch users and admins on component mount
-    // useEffect(() => {
-    //     if (token) {
-    //         fetchData();
-    //     }
-    // }, [token]);
+    useEffect(() => {
+        if (token) {
+            fetchData();
+        }
+    }, [token]);
 
     // Fetch data - for SuperAdmin dashboard; use the correct endpoints
     const fetchData = async () => {
