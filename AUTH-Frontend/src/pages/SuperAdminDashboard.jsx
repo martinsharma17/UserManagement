@@ -107,6 +107,16 @@ const SuperAdminDashboard = () => {
         }
     };
 
+    // Helper: check if a user is already admin/superadmin
+    const isAlreadyAdmin = (user) => {
+        const roles = user?.Roles || user?.roles;
+        if (Array.isArray(roles)) {
+            return roles.includes("Admin") || roles.includes("SuperAdmin");
+        }
+        // Fallback: if user appears in admins list
+        return admins.some((a) => (a.Id || a.id) === (user.Id || user.id));
+    };
+
     // Replace handleAddUser with fixed version
     const handleAddUser = async () => {
         if (!newUser.name || !newUser.email || !newUser.password) {
@@ -165,6 +175,11 @@ const SuperAdminDashboard = () => {
 
     // Make user admin
     const handleMakeAdmin = async (userId) => {
+        const targetUser = users.find((u) => (u.Id || u.id) === userId);
+        if (isAlreadyAdmin(targetUser)) {
+            setError("User is already an admin");
+            return;
+        }
         try {
             const response = await fetch(`${apiBase}/api/SuperAdmin/promote/${userId}`, {
                 method: 'POST',
@@ -175,8 +190,16 @@ const SuperAdminDashboard = () => {
                 setSuccess("User promoted to admin");
                 fetchData();
             } else {
-                const data = await response.json();
-                setError(data.message || "Failed to promote user");
+                // Try to surface backend message (400 when already admin)
+                let message = "Failed to promote user";
+                try {
+                    const data = await response.json();
+                    message = data.message || data.error || message;
+                } catch {
+                    const text = await response.text();
+                    if (text) message = text;
+                }
+                setError(message);
             }
         } catch (err) {
             setError("Network error");
@@ -356,7 +379,12 @@ const SuperAdminDashboard = () => {
                                                 <div className="flex space-x-2">
                                                     <button
                                                         onClick={() => handleMakeAdmin(user.Id || user.id)}
-                                                        className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200"
+                                                        disabled={isAlreadyAdmin(user)}
+                                                        title={isAlreadyAdmin(user) ? "Already an admin" : "Promote to admin"}
+                                                        className={`px-3 py-1 text-xs rounded ${isAlreadyAdmin(user)
+                                                            ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                                            : "bg-green-100 text-green-700 hover:bg-green-200"
+                                                            }`}
                                                     >
                                                         Make Admin
                                                     </button>
