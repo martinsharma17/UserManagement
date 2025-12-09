@@ -1,13 +1,13 @@
 // src/components/dashboard/AddUserModal.jsx
 import React from 'react';
 
-const AddUserModal = ({ 
-    show, 
-    newUser, 
-    setNewUser, 
-    onClose, 
+const AddUserModal = ({
+    show,
+    newUser,
+    setNewUser,
+    onClose,
     onSubmit,
-    allowRoleSelection = true 
+    allowRoleSelection = true
 }) => {
     if (!show) return null;
 
@@ -45,6 +45,7 @@ const AddUserModal = ({
                         >
                             <option value="User">User</option>
                             <option value="Admin">Admin</option>
+                            <option value="Manager">Manager</option>
                         </select>
                     )}
                 </div>

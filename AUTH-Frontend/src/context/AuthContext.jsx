@@ -1,179 +1,168 @@
 // src/context/AuthContext.js
-// Global state for authentication: Manages token/user, login/logout, persists in localStorage.
-// Connected to your backend via fetch: Sends JSON to /api/login & /api/register.
-// On load, checks for existing token and optionally validates it (uncomment if /api/me exists).
-// Why Context? Avoids prop-drilling; any component can access auth state easily.
+// ==============================================================================
+// AUTHENTICATION CONTEXT (Global State)
+// ==============================================================================
+// This file manages the "who is logged in" state for the entire application.
+// It provides:
+// 1. `token`: The JWT string used for API authentication.
+// 2. `user`: An object containing user details and roles.
+// 3. `login(email, password)`: Function to call the backend login API.
+// 4. `logout()`: Function to clear state and sign out.
+//
+// HOW IT WORKS:
+// - On app start, it checks `localStorage` for an existing token.
+// - If found, it decodes the token to restore the user's session (so you stay logged in on refresh).
+// - It exposes this state via `useAuth()` hook so any component (Navbar, Dashboard) can access it.
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
-import { jwtDecode } from 'jwt-decode'; // Import jwtDecode
+import { useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 
-// Create context: Holds auth values (token, user, methods).
+// Create the context object
 const AuthContext = createContext();
 
-// Hook: useAuth() - Safe access to context (throws error if used outside provider).
-// Usage in components: const { token, login, logout } = useAuth();
+// Custom Hook for consistent access
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (!context) {
-        throw new Error('useAuth must be used within AuthProvider'); // Prevents misuse
+        throw new Error('useAuth must be used within AuthProvider');
     }
     return context;
 };
 
-// Provider: Wraps app, manages state with hooks.
-// Params: children (JSX to wrap).
-// State: token (JWT string), user (object from backend), loading (bool for initial check).
+// ==============================================================================
+// AUTH PROVIDER COMPONENT
+// ==============================================================================
 export const AuthProvider = ({ children }) => {
-    // Initialize from localStorage: Persists login across browser refreshes.
+    // --- STATE INITIALIZATION ---
+    // We initialise state from localStorage so data persists on page reload.
+    
+    // Authorization Token (JWT)
     const [token, setToken] = useState(() => {
         const storedToken = localStorage.getItem('authToken');
-        console.log('Initial token from localStorage:', storedToken);
         return storedToken;
     });
+
+    // User Object (contains ID, Email, Roles)
     const [user, setUser] = useState(() => {
         const storedRoles = localStorage.getItem('userRoles');
         if (storedRoles) {
-            console.log('Initial user roles from localStorage:', storedRoles);
             return { roles: JSON.parse(storedRoles) };
         }
-        console.log('No initial user roles found.');
-        return null;
-    }); // Backend user: { id, email, roles }
-    const [loading, setLoading] = useState(true); // True on mount for splash prevention
-    // API Base URL from environment variable or default
+        return null; // Not logged in
+    });
+
+    const [loading, setLoading] = useState(true); // Prevents flickering while checking auth state on load
+    
+    // API CONFIG: Looks for VITE_API_URL or defaults to localhost
     const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-    // Effect: Runs on mount - Restore user if token exists, or check URL for Google login token.
-    // Why useEffect? Side-effect free component; handles async validation.
+    // --- EFFECT: INITIAL AUTH CHECK ---
+    // Runs once when the app mounts.
     useEffect(() => {
         const initAuth = async () => {
             console.log('Auth init effect running. Current token:', token);
 
-            // Check URL for Google login token
+            // 1. CHECK FOR GOOGLE LOGIN CALLBACK
+            // When Google redirects back, it puts the token in the URL query string.
             const urlParams = new URLSearchParams(window.location.search);
             const urlToken = urlParams.get('token');
 
             if (urlToken) {
-                console.log('Token found in URL from Google login');
+                // If we found a token in the URL, that means Google Login just happened.
                 try {
                     const decodedToken = jwtDecode(urlToken);
-                    console.log('Decoded Google login token:', decodedToken);
-
-                    // Extract roles - try multiple claim formats
+                    
+                    // Normalise Roles: Different identity providers format roles differently.
+                    // We check multiple keys to be safe.
                     const roles = decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']
                         || decodedToken["role"]
                         || decodedToken["roles"]
                         || decodedToken["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role"];
                     const rolesArray = Array.isArray(roles) ? roles : (roles ? [roles] : []);
 
+                    // Save to Storage
                     localStorage.setItem('authToken', urlToken);
                     localStorage.setItem('userRoles', JSON.stringify(rolesArray));
 
-                    // Extract user data from token
+                    // Extract User Info
                     const userEmail = decodedToken.email || decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || '';
                     const userId = decodedToken.sub || decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || '';
-                    const userName = decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name']
-                        || decodedToken.name
-                        || decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname']
-                        || '';
-                    // Try multiple ways to get picture from token
-                    const userPicture = decodedToken.picture
-                        || decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/picture']
-                        || decodedToken['urn:google:picture']
-                        || null;
+                    const userName = decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || decodedToken.name || '';
+                    const userPicture = decodedToken.picture || decodedToken['urn:google:picture'] || null;
 
-                    console.log('Full decoded token:', decodedToken);
-                    console.log('Extracted user data:', { userId, userEmail, userName, userPicture, rolesArray });
-                    console.log('Picture value:', userPicture);
-
+                    // Update State
                     setToken(urlToken);
                     setUser({ id: userId, email: userEmail, name: userName, roles: rolesArray, picture: userPicture });
 
-                    // Clean URL
+                    // Remove token from URL (security & clean URL)
                     window.history.replaceState({}, document.title, window.location.pathname);
-                    console.log('Google login successful. User state set:', { id: userId, email: userEmail, name: userName, picture: userPicture, roles: rolesArray });
                 } catch (err) {
                     console.error('Error processing Google login token:', err);
                 }
-            } else if (token) {
-                // Optional: Validate token with backend /api/me (uncomment if endpoint exists)
-                // try {
-                //   const res = await fetch('http://localhost:3001/api/me', {
-                //     headers: { Authorization: `Bearer ${token}` }
-                //   });
-                //   if (res.ok) {
-                //     const data = await res.json();
-                //     setUser(data.user);
-                //   } else {
-                //     logout(); // Invalid token? Clear it
-                //   }
-                // } catch (err) {
-                //   logout();
-                // }
+            } 
+            else if (token) {
+                 // 2. CHECK FOR EXISTING LOCAL TOKEN
+                 // If we already had a token in state/storage, we assume it's valid for now.
+                 // In a real production app, you might ping an endpoint like /api/auth/me here to verify validity.
             } else {
-                // If no token, clear user and roles from local storage
-                console.log('No token found on init, clearing local storage and user state.');
+                // No token found anywhere -> Not logged in.
                 localStorage.removeItem('userRoles');
                 setUser(null);
             }
-            setLoading(false); // Done loading
-            console.log('Auth init completed. Loading set to false.');
+            
+            setLoading(false); // App is ready to render
         };
         initAuth();
-    }, [token]); // Re-run if token changes
+    }, [token]);
 
-    // Login function: Async POST to backend /api/login.
-    // Params: email (string), password (string).
-    // Returns: { success: bool, message?: string } for form handling.
-    // Handles: Network errors, invalid creds, sets token/user on success.
+    // --- LOGIN FUNCTION ---
+    // Called by LoginForm.jsx
     const login = async (email, password) => {
         try {
             console.log('Attempting login for:', email);
-            // Fetch config: Matches your backend expectations (JSON body, no auth header for login).
-            const response = await fetch('http://localhost:3001/api/UserAuth/Login', {
+            
+            // 1. Call Backend API
+            const response = await fetch(`${apiBase}/api/UserAuth/Login`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json', // Required for JSON parsing on backend
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email, password }), // Exact body format for your API
+                body: JSON.stringify({ email, password }),
             });
 
-            const data = await response.json(); // Parse JSON response
-            console.log('Login API response:', data);
+            const data = await response.json();
 
-            // Success check: Based on your backend { success: true }
+            // 2. Handle Success
             if (data.success) {
+                // Save Token & Roles
                 localStorage.setItem('authToken', data.token);
                 localStorage.setItem('userRoles', JSON.stringify(data.roles));
 
+                // Decode Token to get User Details immediately
                 const decodedToken = jwtDecode(data.token);
-                console.log("Decoded Token in AuthContext (for ID and Name):", decodedToken); // Log the full decoded token
                 const userEmail = decodedToken.email;
-                // Correctly extract userId using the standard 'sub' claim or the .NET Identity 'nameidentifier' claim
                 const userId = decodedToken.sub || decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
-                // Correctly extract userName using the .NET Identity 'name' claim
                 const userName = decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || decodedToken.name || '';
-                // Extract Google profile picture if available
                 const userPicture = decodedToken.picture || null;
 
+                // Update State
                 setToken(data.token);
-                setUser({ id: userId, email: userEmail, name: userName, roles: data.roles, picture: userPicture }); // Set full user object with name and picture
-                console.log('Login successful. User state set:', { id: userId, email: userEmail, name: userName, roles: data.roles, picture: userPicture });
-                return { success: true }; // No message needed on success
+                setUser({ id: userId, email: userEmail, name: userName, roles: data.roles, picture: userPicture });
+                
+                return { success: true };
             } else {
-                console.log('Login failed:', data.message);
-                return { success: false, message: data.message || 'Invalid credentials' }; // Backend error msg
+                // 3. Handle Failure
+                return { success: false, message: data.message || 'Invalid credentials' };
             }
         } catch (error) {
-            // Edge case: Network/offline - Generic error, no leak of details.
-            console.error('Login error:', error); // Log for dev
+            console.error('Login error:', error);
             return { success: false, message: 'Network error. Check backend server.' };
         }
     };
 
-    // Logout: Clears state/storage, no backend call (client-side).
-    // Why? Token invalidation on backend optional; this suffices for most apps.
+    // --- LOGOUT FUNCTION ---
+    // Clears all authentication data.
     const logout = () => {
         console.log('Logging out.');
         localStorage.removeItem('authToken');
@@ -182,24 +171,20 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
-    // Value: Expose to consumers - Includes loading to prevent flashes.
     const value = {
-        token,      // For protected headers/routes
-        user,       // For displaying user info (now includes roles)
-        loading,    // For spinners/skeletons
-        login,      // Function to call
-        logout,     // Function to call
-        apiBase    // Expose API base URL
-
+        token,      // Current JWT
+        user,       // Current User Info
+        loading,    // Is App Initialising?
+        login,      // Login Method
+        logout,     // Logout Method
+        apiBase     // API URL helper
     };
 
-    // Render: If loading, show nothing (or spinner); else provide context.
+    // Prevent rendering children until we've checked for a token
     if (loading) {
-        console.log('AuthContext is loading...');
-        return <div>Loading...</div>; // Simple placeholder; customize with spinner
+        return <div>Loading...</div>; // Could replace with a nice spinner
     }
 
-    console.log('AuthContext loaded. Token:', token, 'User:', user);
     return (
         <AuthContext.Provider value={value}>
             {children}

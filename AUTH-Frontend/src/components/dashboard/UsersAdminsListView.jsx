@@ -1,14 +1,14 @@
 // src/components/dashboard/UsersAdminsListView.jsx
 import React from 'react';
 
-const UsersAdminsListView = ({ 
-    users, 
-    admins, 
-    isAlreadyAdmin, 
-    onAddUser, 
-    onMakeAdmin, 
-    onDelete, 
-    onRevokeAdmin 
+const UsersAdminsListView = ({
+    users,
+    admins,
+    isAlreadyAdmin,
+    onAddUser,
+    onMakeAdmin,
+    onDelete,
+    onRevokeAdmin
 }) => {
     return (
         <div className="space-y-6">

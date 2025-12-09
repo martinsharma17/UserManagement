@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
@@ -10,8 +11,9 @@ namespace AUTHApi.Data
         public static async Task SeedRolesAsync(IServiceProvider serviceProvider)
         {
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+            var configuration = serviceProvider.GetRequiredService<IConfiguration>();
 
-            string[] roles = { "SuperAdmin", "Admin", "User" };
+            var roles = configuration.GetSection("Roles:DefaultRoles").Get<string[]>() ?? new string[] { "SuperAdmin", "Admin", "User", "Manager" };
 
             foreach (var role in roles)
             {

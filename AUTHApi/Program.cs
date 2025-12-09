@@ -13,86 +13,116 @@ internal class Program
 {
     private static async Task Main(string[] args)
     {
+        // ==========================================
+        // 1. INITIALIZATION
+        // ==========================================
+        // Create the WebApplication builder to configure services and the app pipeline.
         var builder = WebApplication.CreateBuilder(args);
 
-        // Add services to the container.
+        // ==========================================
+        // 2. SERVICE REGISTRATION (Dependency Injection)
+        // ==========================================
+        
+        // Add controllers to the service container so API endpoints work.
         builder.Services.AddControllers();
+        // Add Swagger for API documentation and testing UI.
         builder.Services.AddSwaggerGen();
 
-        // CORS for frontend
+        // --- CORS Configuration ---
+        // Defines who can access this API. Here we allow the frontend URL.
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowSpecificOrigin",
                 builder =>
                 {
+                    // Allow requests from React Frontend running on localhost:5173
                     builder.WithOrigins("http://localhost:5173")
-                    .AllowAnyHeader()
-                    .AllowAnyMethod();
+                    .AllowAnyHeader() // Allow any HTTP headers (e.g., Authorization, Content-Type)
+                    .AllowAnyMethod(); // Allow any HTTP methods (GET, POST, PUT, DELETE, etc.)
                 });
         });
 
-        // ============= IDENTITY CONFIG =============
+        // --- IDENTITY (USER MANAGEMENT) Configuration ---
+        // Configures ASP.NET Core Identity for user storage and management.
         builder.Services.AddIdentity<ApplicationUser, IdentityRole>(option =>
         {
+            // Password settings (relaxed for development, tighten for production!)
             option.Password.RequireDigit = false;
             option.Password.RequireLowercase = false;
             option.Password.RequireUppercase = false;
             option.Password.RequireNonAlphanumeric = false;
-            option.Password.RequiredLength = 4;
+            option.Password.RequiredLength = 4; // Minimum password length
         })
-        .AddEntityFrameworkStores<ApplicationDbContext>()
-        .AddDefaultTokenProviders();
+        .AddEntityFrameworkStores<ApplicationDbContext>() // Connect Identity to our EF Core DB Context
+        .AddDefaultTokenProviders(); // Generates tokens for email confirmation, password reset, etc.
 
-        // DbContext
+        // --- DATABASE CONTEXT ---
+        // Connects to SQL Server using the connection string from appsettings.json.
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
         {
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
         });
 
-        // ============= AUTHENTICATION CONFIG (JWT + Google) =============
+        // ==========================================
+        // 3. AUTHENTICATION & AUTHORIZATION CONFIG
+        // ==========================================
+
+        // Configure Authentication Services
         builder.Services.AddAuthentication(options =>
         {
+            // Set JWT (JSON Web Token) as the default scheme for authentication.
+            // This means the API expects a Bearer token in the Authorization header.
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
         })
+        // --- JWT Bearer Configuration ---
         .AddJwtBearer(options =>
         {
             options.TokenValidationParameters = new TokenValidationParameters
             {
+                // Validate that the token was signed by this server (Issuer)
                 ValidateIssuer = true,
                 ValidIssuer = builder.Configuration["Jwt:Issuer"],
 
+                // Validate that the token is intended for this API (Audience)
                 ValidateAudience = true,
                 ValidAudience = builder.Configuration["Jwt:Audience"],
 
+                // Ensure the token hasn't expired
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
+                // The secret key used to sign the token (MUST match the one used during generation)
                 IssuerSigningKey = new SymmetricSecurityKey(
                     System.Text.Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
                 ),
 
+                // Map standard claims to .NET types
                 RoleClaimType = ClaimTypes.Role,
                 NameClaimType = ClaimTypes.Name
             };
         })
-        .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme)
+        // --- External Auth (Google) Configuration ---
+        .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme) // Cookies needed for Google sign-in flow
         .AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
         {
-
+            // Get Google credentials from configuration (appsettings.json or User Secrets)
             options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
             options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
-            options.CallbackPath = "/signin-google";
+            options.CallbackPath = "/signin-google"; // Endpoint where Google redirects back
             options.SaveTokens = true;
+            
             // Request additional scopes for profile picture
             options.Scope.Add("profile");
             options.Scope.Add("email");
-            // Map Google claims to standard claim types
+            
+            // Map Google claims to our internal user claims
             options.ClaimActions.MapJsonKey(ClaimTypes.Name, "name");
             options.ClaimActions.MapJsonKey(ClaimTypes.Email, "email");
             options.ClaimActions.MapJsonKey("picture", "picture");
         });
 
-        // ============= AUTH POLICIES =============
+        // --- Authorization Policies ---
+        // Define policies based on Roles. These are used in [Authorize(Policy="...")] attributes.
         builder.Services.AddAuthorization(options =>
         {
             options.AddPolicy("AdminOnly", policy =>
@@ -107,13 +137,17 @@ internal class Program
 
         var app = builder.Build();
 
-        // ============= SEED ROLES + SUPERADMIN =============
+        // ==========================================
+        // 4. DATA SEEDING
+        // ==========================================
+        // create a scope to get services (since app has started but request scope doesn't exist yet)
         using (var scope = app.Services.CreateScope())
         {
             var services = scope.ServiceProvider;
 
             try
             {
+                // Seed Roles (Admin, User, Manager) and the SuperAdmin user if they don't exist.
                 await RoleSeeder.SeedRolesAsync(services);
                 await RoleSeeder.SeedSuperAdminAsync(services);
             }
@@ -124,9 +158,14 @@ internal class Program
             }
         }
 
-        // Swagger
+        // ==========================================
+        // 5. MIDDLEWARE PIPELINE
+        // ==========================================
+        
+        // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
+            // Enable Swagger in Development mode
             app.UseSwagger();
             app.UseSwaggerUI(options =>
             {
@@ -134,14 +173,19 @@ internal class Program
             });
         }
 
-        app.UseHttpsRedirection();
-        app.UseCors("AllowSpecificOrigin");
+        app.UseHttpsRedirection(); // Redirect HTTP to HTTPS
+        app.UseCors("AllowSpecificOrigin"); // Enable CORS (Must be before Auth)
 
+        // Enable Authentication (Who are you?)
         app.UseAuthentication();
+        // Enable Authorization (Are you allowed here?)
         app.UseAuthorization();
 
+        // Map controller endpoints
         app.MapControllers();
 
+        // Run the application
         await app.RunAsync();
     }
 }
+

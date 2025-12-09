@@ -8,17 +8,22 @@ using System.Security.Claims; // Added this using directive
 namespace AUTHApi.Controllers
 {
 
-    /// Controller for managing roles
+    /// <summary>
+    /// Controller for managing roles and permissions.
     /// Base URL: /api/Roles
-    /// IMPORTANT: All endpoints require Admin role
-
+    /// 
+    /// SECURITY NOTE:
+    /// Most endpoints here are protected by [Authorize(Policy = "AdminOnly")].
+    /// This means even if a user has a valid token, they must have the "Admin" role
+    /// to access these endpoints.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Policy = "AdminOnly")]  // Only Admins can access this controller
+    [Authorize(Policy = "AdminOnly")]  // CLASS-LEVEL SECURITY: Applies to ALL methods unless overridden
     public class RolesController : ControllerBase
     {
-        private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager; // API to create/delete roles
+        private readonly UserManager<ApplicationUser> _userManager; // API to assign roles to users
 
         public RolesController(RoleManager<IdentityRole> roleManager, UserManager<ApplicationUser> userManager)
         {
@@ -27,36 +32,42 @@ namespace AUTHApi.Controllers
         }
 
 
-        /// Get all roles in the system
-        /// GET /api/Roles
-
+        /// <summary>
+        /// Retrieves a list of all available roles in the system.
+        /// Endpoint: GET /api/Roles
+        /// Access: Admin Only
+        /// </summary>
         [HttpGet]
         public IActionResult GetAllRoles()
         {
+            // Project to anonymous object to hide internal details if any
             var roles = _roleManager.Roles.Select(r => new { r.Id, r.Name }).ToList();
             return Ok(new { success = true, roles = roles });
         }
 
-        /// Create a new role (SuperAdmin only)
-        /// POST /api/Roles/CreateRole
+        /// <summary>
+        /// Creates a new role.
+        /// Endpoint: POST /api/Roles/CreateRole
+        /// Access: SuperAdmin Only (Higher privilege than normal Admin)
+        /// </summary>
         [HttpPost("CreateRole")]
-        [Authorize(Roles = "SuperAdmin")]
+        [Authorize(Roles = "SuperAdmin")] // METHOD-LEVEL SECURITY: Only SuperAdmin can create roles
         public async Task<IActionResult> CreateRole([FromBody] CreateRoleModel model)
         {
-            // Validate input
+            // 1. Validation
             if (string.IsNullOrWhiteSpace(model.RoleName))
             {
                 return BadRequest(new { success = false, message = "RoleName is required" });
             }
 
-            // Check if role already exists
+            // 2. Check existence
             var roleExists = await _roleManager.RoleExistsAsync(model.RoleName);
             if (roleExists)
             {
                 return BadRequest(new { success = false, message = "Role already exists" });
             }
 
-            // Create new role
+            // 3. Create Role
             var role = new IdentityRole(model.RoleName);
             var result = await _roleManager.CreateAsync(role);
             
@@ -68,19 +79,24 @@ namespace AUTHApi.Controllers
             return BadRequest(new { success = false, message = "Failed to create role", errors = result.Errors });
         }
 
-        /// Delete a role (SuperAdmin only)
-        /// DELETE /api/Roles/DeleteRole/{roleName}
+        /// <summary>
+        /// Deletes a role by name.
+        /// Endpoint: DELETE /api/Roles/DeleteRole/{roleName}
+        /// Access: SuperAdmin Only
+        /// </summary>
         [HttpDelete("DeleteRole/{roleName}")]
         [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> DeleteRole(string roleName)
         {
-            // Prevent deleting system roles
+            // 1. Protect Critical Roles
+            // We should never delete the basic system roles or we break the app.
             var systemRoles = new[] { "SuperAdmin", "Admin", "User" };
             if (systemRoles.Contains(roleName))
             {
                 return BadRequest(new { success = false, message = "Cannot delete system roles" });
             }
 
+            // 2. Find and Delete
             var role = await _roleManager.FindByNameAsync(roleName);
             if (role == null)
             {
@@ -96,8 +112,11 @@ namespace AUTHApi.Controllers
             return BadRequest(new { success = false, message = "Failed to delete role", errors = result.Errors });
         }
 
-        /// Get all users (SuperAdmin only)
-        /// GET /api/Roles/AllUsers
+        /// <summary>
+        /// Gets all users in the system with their roles.
+        /// Endpoint: GET /api/Roles/AllUsers
+        /// Access: SuperAdmin Only
+        /// </summary>
         [HttpGet("AllUsers")]
         [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> GetAllUsers()
@@ -105,6 +124,9 @@ namespace AUTHApi.Controllers
             var users = await _userManager.Users.ToListAsync();
             var userList = new List<object>();
 
+            // Loop users to fetch their roles individually
+            // Note: In a large system, this loop might be slow (N+1 problem).
+            // Better to use a JOIN query in EF Core for production.
             foreach (var user in users)
             {
                 var roles = await _userManager.GetRolesAsync(user);
@@ -114,12 +136,16 @@ namespace AUTHApi.Controllers
             return Ok(new { success = true, users = userList });
         }
 
-        /// Get all admins (SuperAdmin only)
-        /// GET /api/Roles/AllAdmins
+        /// <summary>
+        /// Gets all Admin users.
+        /// Endpoint: GET /api/Roles/AllAdmins
+        /// Access: SuperAdmin Only
+        /// </summary>
         [HttpGet("AllAdmins")]
         [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> GetAllAdmins()
         {
+            // Helper method from UserManager to find users by role
             var admins = await _userManager.GetUsersInRoleAsync("Admin");
             var adminList = new List<object>();
 
@@ -132,20 +158,25 @@ namespace AUTHApi.Controllers
             return Ok(new { success = true, admins = adminList });
         }
 
-        /// Get users managed by the current Admin (Admin only)
-        /// GET /api/Admin/users
-        [HttpGet("Admin/users")] // Corrected path to match frontend
+        /// <summary>
+        /// Gets users that are managed by the currently logged-in Admin.
+        /// Endpoint: GET /api/Roles/Admin/users
+        /// Access: Admin Only
+        /// </summary>
+        [HttpGet("Admin/users")] 
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetUsersForAdmin()
         {
-            var adminId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Get Admin's ID from JWT
+            // 1. Identify valid Admin
+            var adminId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Extract ID from JWT
 
             if (string.IsNullOrEmpty(adminId))
             {
                 return Unauthorized(new { success = false, message = "Admin ID not found in token." });
             }
 
-            // Assuming ApplicationUser has a ManagerId property to link users to their managing Admin
+            // 2. Fetch users where ManagerId matches this Admin
+            // This assumes a hierarchical relationship (Admin -> Users)
             var users = await _userManager.Users
                                         .Where(u => u.ManagerId == adminId)
                                         .ToListAsync();
@@ -161,40 +192,34 @@ namespace AUTHApi.Controllers
         }
 
 
-        /// Assign a role to a user
-        /// POST /api/Roles/AssignRole
-
+        /// <summary>
+        /// Assigns a specific role to a user.
+        /// Endpoint: POST /api/Roles/AssignRole
+        /// Access: Admin Only (implicitly via class-level attribute)
+        /// </summary>
         [HttpPost("AssignRole")]
         public async Task<IActionResult> AssignRoleToUser([FromBody] AssignRoleModel model)
         {
-            // Validate input
+            // Input Validation
             if (string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.RoleName))
             {
                 return BadRequest(new { success = false, message = "Email and RoleName are required" });
             }
 
-            // Find user
+            // Lookups
             var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user == null)
-            {
-                return NotFound(new { success = false, message = "User not found" });
-            }
+            if (user == null) return NotFound(new { success = false, message = "User not found" });
 
-            // Check if role exists
             var roleExists = await _roleManager.RoleExistsAsync(model.RoleName);
-            if (!roleExists)
-            {
-                return NotFound(new { success = false, message = "Role not found" });
-            }
+            if (!roleExists) return NotFound(new { success = false, message = "Role not found" });
 
-            // Check if user already has this role
+            // Execution
             var isInRole = await _userManager.IsInRoleAsync(user, model.RoleName);
             if (isInRole)
             {
                 return BadRequest(new { success = false, message = "User already has this role" });
             }
 
-            // Assign role to user
             var result = await _userManager.AddToRoleAsync(user, model.RoleName);
             if (result.Succeeded)
             {
@@ -204,32 +229,27 @@ namespace AUTHApi.Controllers
             return BadRequest(new { success = false, message = "Failed to assign role", errors = result.Errors });
         }
 
-        /// Remove a role from a user
-
+        /// <summary>
+        /// Removes a role from a user.
+        /// Endpoint: POST /api/Roles/RemoveRole
+        /// </summary>
         [HttpPost("RemoveRole")]
         public async Task<IActionResult> RemoveRoleFromUser([FromBody] AssignRoleModel model)
         {
-            // Validate input
             if (string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.RoleName))
             {
                 return BadRequest(new { success = false, message = "Email and RoleName are required" });
             }
 
-            // Find user
             var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user == null)
-            {
-                return NotFound(new { success = false, message = "User not found" });
-            }
+            if (user == null) return NotFound(new { success = false, message = "User not found" });
 
-            // Check if user has this role
             var isInRole = await _userManager.IsInRoleAsync(user, model.RoleName);
             if (!isInRole)
             {
                 return BadRequest(new { success = false, message = "User does not have this role" });
             }
 
-            // Remove role from user
             var result = await _userManager.RemoveFromRoleAsync(user, model.RoleName);
             if (result.Succeeded)
             {
@@ -239,9 +259,10 @@ namespace AUTHApi.Controllers
             return BadRequest(new { success = false, message = "Failed to remove role", errors = result.Errors });
         }
 
-        /// Get all roles for a specific user
-        /// GET /api/Roles/UserRoles/{email}
-
+        /// <summary>
+        /// Checks which roles a specific user has.
+        /// Endpoint: GET /api/Roles/UserRoles/{email}
+        /// </summary>
         [HttpGet("UserRoles/{email}")]
         public async Task<IActionResult> GetUserRoles(string email)
         {

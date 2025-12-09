@@ -1,9 +1,8 @@
-// src/pages/AdminDashboard.jsx
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/dashboard/Sidebar.jsx';
-import { getAdminMenuItems } from '../components/dashboard/sidebarItems.jsx';
+import { getManagerMenuItems } from '../components/dashboard/sidebarItems.jsx';
 import AdminDashboardView from '../components/dashboard/admin/AdminDashboardView.jsx';
 import AdminUsersListView from '../components/dashboard/admin/AdminUsersListView.jsx';
 import AdminChartsView from '../components/dashboard/admin/AdminChartsView.jsx';
@@ -11,7 +10,7 @@ import LoginFormView from '../components/dashboard/LoginFormView.jsx';
 import RegisterFormView from '../components/dashboard/RegisterFormView.jsx';
 import AddUserModal from '../components/dashboard/AddUserModal.jsx';
 
-const AdminDashboard = () => {
+const ManagerDashboard = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -26,7 +25,7 @@ const AdminDashboard = () => {
     const navigate = useNavigate();
 
     // Get menu items based on permissions
-    const menuItems = getAdminMenuItems(permissions);
+    const menuItems = getManagerMenuItems(permissions);
 
     useEffect(() => {
         if (!token) {
@@ -35,29 +34,30 @@ const AdminDashboard = () => {
         }
         fetchUsers();
         fetchPermissions();
-    }, [token, navigate, fetchUsers, fetchPermissions]);
+    }, [token, navigate]);
 
-    // Fetch admin permissions (this would come from backend)
-    const fetchPermissions = useCallback(async () => {
+    // Fetch manager permissions (this would come from backend)
+    const fetchPermissions = async () => {
         // In a real app, this would fetch from backend
         // For now, we'll use default permissions or localStorage
-        const storedPermissions = localStorage.getItem(`admin_permissions_${user?.id}`);
+        const storedPermissions = localStorage.getItem(`manager_permissions_${user?.id}`);
         if (storedPermissions) {
             setPermissions(JSON.parse(storedPermissions));
         } else {
-            // Default permissions for admin
+            // Default permissions for manager (same as admin plus reports and audit)
             const defaultPermissions = {
                 dashboard: true,
                 view_users: true,
                 view_charts: true,
-                view_reports: false, // Can be enabled by SuperAdmin
+                view_reports: true, // Managers have access to reports
+                view_audit: true, // Managers have access to audit logs
             };
             setPermissions(defaultPermissions);
-            localStorage.setItem(`admin_permissions_${user?.id}`, JSON.stringify(defaultPermissions));
+            localStorage.setItem(`manager_permissions_${user?.id}`, JSON.stringify(defaultPermissions));
         }
-    }, [user?.id]);
+    };
 
-    const fetchUsers = useCallback(async () => {
+    const fetchUsers = async () => {
         setLoading(true);
         try {
             const response = await fetch(`${apiBase}/api/Admin/users`, {
@@ -66,20 +66,20 @@ const AdminDashboard = () => {
 
             if (response.ok) {
                 const data = await response.json();
-                // Filter out admins if they appear in the list
+                // Filter out admins and superadmins if they appear in the list
                 const regularUsers = data.filter(user =>
-                    !user.roles?.includes('Admin') && !user.roles?.includes('SuperAdmin')
+                    !user.roles?.includes('Admin') && !user.roles?.includes('SuperAdmin') && !user.roles?.includes('Manager')
                 );
                 setUsers(regularUsers);
             } else {
                 setError("Failed to fetch users");
             }
-        } catch {
+        } catch (_) {
             setError("Failed to fetch users");
         } finally {
             setLoading(false);
         }
-    }, [apiBase, token]);
+    };
 
     const handleAddUser = async () => {
         if (!newUser.name || !newUser.email || !newUser.password) {
@@ -130,7 +130,7 @@ const AdminDashboard = () => {
             } else {
                 setError("Failed to delete user");
             }
-        } catch (_ERR) {
+        } catch (_) {
             setError("Network error");
         }
     };
@@ -203,6 +203,19 @@ const AdminDashboard = () => {
                         <p className="text-gray-500">Reports view coming soon...</p>
                     </div>
                 );
+            case 'audit':
+                if (!permissions.view_audit) {
+                    return (
+                        <div className="text-center py-12">
+                            <p className="text-red-600">You don't have permission to view audit logs. Contact SuperAdmin for access.</p>
+                        </div>
+                    );
+                }
+                return (
+                    <div className="text-center py-12">
+                        <p className="text-gray-500">Audit logs view coming soon...</p>
+                    </div>
+                );
             case 'login':
                 return <LoginFormView />;
             case 'register':
@@ -263,4 +276,4 @@ const AdminDashboard = () => {
     );
 };
 
-export default AdminDashboard;
+export default ManagerDashboard;

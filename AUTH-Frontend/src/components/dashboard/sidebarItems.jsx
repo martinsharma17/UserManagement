@@ -111,18 +111,56 @@ export const getAdminMenuItems = (permissions = {}) => {
 
     // Filter based on permissions (if no permissions object, show default items)
     if (!permissions || Object.keys(permissions).length === 0) {
-        return allItems.filter(item => 
-            item.permission === null || 
-            item.id === 'dashboard' || 
-            item.id === 'users' || 
+        return allItems.filter(item =>
+            item.permission === null ||
+            item.id === 'dashboard' ||
+            item.id === 'users' ||
             item.id === 'charts' ||
             item.id === 'login' ||
             item.id === 'register'
         );
     }
 
-    return allItems.filter(item => 
+    return allItems.filter(item =>
         item.permission === null || permissions[item.permission] === true
     );
 };
+
+// Manager sidebar menu items (filtered based on permissions)
+export const getManagerMenuItems = (permissions = {}) => {
+    const allItems = [
+        { id: 'dashboard', title: 'Dashboard', icon: DashboardIcon, permission: 'dashboard' },
+        { id: 'users', title: 'Assigned Users', icon: UsersIcon, permission: 'view_users' },
+        { id: 'charts', title: 'Charts', icon: ChartsIcon, permission: 'view_charts' },
+        { id: 'reports', title: 'Reports', icon: ReportsIcon, permission: 'view_reports' },
+        { id: 'audit', title: 'Audit Logs', icon: AuditIcon, permission: 'view_audit' },
+        { id: 'login', title: 'Login', icon: LoginIcon, permission: null }, // Always available
+        { id: 'register', title: 'Register', icon: RegisterIcon, permission: null }, // Always available
+    ];
+
+    // Filter based on permissions (if no permissions object, show default items)
+    if (!permissions || Object.keys(permissions).length === 0) {
+        return allItems.filter(item =>
+            item.permission === null ||
+            item.id === 'dashboard' ||
+            item.id === 'users' ||
+            item.id === 'charts' ||
+            item.id === 'reports' ||
+            item.id === 'audit' ||
+            item.id === 'login' ||
+            item.id === 'register'
+        );
+    }
+
+    return allItems.filter(item =>
+        item.permission === null || permissions[item.permission] === true
+    );
+};
+
+// User sidebar menu items
+export const getUserMenuItems = () => [
+    { id: 'dashboard', title: 'Dashboard', icon: DashboardIcon, disabled: false },
+    { id: 'settings', title: 'Settings', icon: SettingsIcon, disabled: false },
+    { id: 'notifications', title: 'Notifications', icon: NotificationsIcon, disabled: false },
+];
 
