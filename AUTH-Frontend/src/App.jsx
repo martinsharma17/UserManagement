@@ -91,7 +91,6 @@ function AppContent() {
     <div className="App">
       <header className="header">
         {token && <Navbar />} {/* Conditionally render Navbar */}
-        <h1>My Auth App</h1>
       </header>
       <main>
         <Routes>

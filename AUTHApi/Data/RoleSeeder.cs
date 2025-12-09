@@ -31,9 +31,8 @@ namespace AUTHApi.Data
 
             var superAdmin = await userManager.FindByEmailAsync(email);
 
-            // Temporarily remove the if check to force recreation
-            // if (superAdmin == null)
-            // {
+            if (superAdmin == null)
+            {
                 superAdmin = new ApplicationUser
                 {
                     UserName = email,
@@ -50,7 +49,7 @@ namespace AUTHApi.Data
 
                     return;
                 }
-            // }
+            }
 
             // Assign roles
             if (!await userManager.IsInRoleAsync(superAdmin, "SuperAdmin"))

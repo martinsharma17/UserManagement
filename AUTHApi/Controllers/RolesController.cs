@@ -37,6 +37,65 @@ namespace AUTHApi.Controllers
             return Ok(new { success = true, roles = roles });
         }
 
+        /// Create a new role (SuperAdmin only)
+        /// POST /api/Roles/CreateRole
+        [HttpPost("CreateRole")]
+        [Authorize(Roles = "SuperAdmin")]
+        public async Task<IActionResult> CreateRole([FromBody] CreateRoleModel model)
+        {
+            // Validate input
+            if (string.IsNullOrWhiteSpace(model.RoleName))
+            {
+                return BadRequest(new { success = false, message = "RoleName is required" });
+            }
+
+            // Check if role already exists
+            var roleExists = await _roleManager.RoleExistsAsync(model.RoleName);
+            if (roleExists)
+            {
+                return BadRequest(new { success = false, message = "Role already exists" });
+            }
+
+            // Create new role
+            var role = new IdentityRole(model.RoleName);
+            var result = await _roleManager.CreateAsync(role);
+            
+            if (result.Succeeded)
+            {
+                return Ok(new { success = true, message = $"Role '{model.RoleName}' created successfully", role = new { role.Id, role.Name } });
+            }
+
+            return BadRequest(new { success = false, message = "Failed to create role", errors = result.Errors });
+        }
+
+        /// Delete a role (SuperAdmin only)
+        /// DELETE /api/Roles/DeleteRole/{roleName}
+        [HttpDelete("DeleteRole/{roleName}")]
+        [Authorize(Roles = "SuperAdmin")]
+        public async Task<IActionResult> DeleteRole(string roleName)
+        {
+            // Prevent deleting system roles
+            var systemRoles = new[] { "SuperAdmin", "Admin", "User" };
+            if (systemRoles.Contains(roleName))
+            {
+                return BadRequest(new { success = false, message = "Cannot delete system roles" });
+            }
+
+            var role = await _roleManager.FindByNameAsync(roleName);
+            if (role == null)
+            {
+                return NotFound(new { success = false, message = "Role not found" });
+            }
+
+            var result = await _roleManager.DeleteAsync(role);
+            if (result.Succeeded)
+            {
+                return Ok(new { success = true, message = $"Role '{roleName}' deleted successfully" });
+            }
+
+            return BadRequest(new { success = false, message = "Failed to delete role", errors = result.Errors });
+        }
+
         /// Get all users (SuperAdmin only)
         /// GET /api/Roles/AllUsers
         [HttpGet("AllUsers")]
@@ -198,10 +257,15 @@ namespace AUTHApi.Controllers
     }
 
     /// Model for assigning/removing roles
-
     public class AssignRoleModel
     {
         public string Email { get; set; } = string.Empty;
+        public string RoleName { get; set; } = string.Empty;
+    }
+
+    /// Model for creating roles
+    public class CreateRoleModel
+    {
         public string RoleName { get; set; } = string.Empty;
     }
 }
