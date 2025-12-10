@@ -7,7 +7,8 @@ const AddUserModal = ({
     setNewUser,
     onClose,
     onSubmit,
-    allowRoleSelection = true
+    allowRoleSelection = true,
+    roles = [] // Default to empty array
 }) => {
     if (!show) return null;
 
@@ -43,9 +44,23 @@ const AddUserModal = ({
                             onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                         >
-                            <option value="User">User</option>
-                            <option value="Admin">Admin</option>
-                            <option value="Manager">Manager</option>
+                            {/* Default option if roles empty or to prompt selection, but keeping simple defaults for now */}
+                            {roles && roles.length > 0 ? (
+                                roles.map((role) => {
+                                    const roleName = role.Name || role.name || role;
+                                    return (
+                                        <option key={role.Id || role.id || roleName} value={roleName}>
+                                            {roleName}
+                                        </option>
+                                    );
+                                })
+                            ) : (
+                                <>
+                                    <option value="User">User</option>
+                                    <option value="Admin">Admin</option>
+                                    <option value="Manager">Manager</option>
+                                </>
+                            )}
                         </select>
                     )}
                 </div>

@@ -12,15 +12,24 @@ import RolesManagementView from '../components/dashboard/RolesManagementView.jsx
 import LoginFormView from '../components/dashboard/LoginFormView.jsx';
 import RegisterFormView from '../components/dashboard/RegisterFormView.jsx';
 import AddUserModal from '../components/dashboard/AddUserModal.jsx';
+import AssignRoleModal from '../components/dashboard/AssignRoleModal.jsx';
 
 const SuperAdminDashboard = () => {
     const [users, setUsers] = useState([]);
     const [admins, setAdmins] = useState([]);
+    const [roles, setRoles] = useState([]); // [NEW] Store roles
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+
+    // Add User Modal State
     const [showAddModal, setShowAddModal] = useState(false);
     const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "User" });
+
+    // Assign Role Modal State [NEW]
+    const [showAssignModal, setShowAssignModal] = useState(false);
+    const [selectedUserForRole, setSelectedUserForRole] = useState(null);
+
     const [loginTime, setLoginTime] = useState("");
     const [activeView, setActiveView] = useState("dashboard");
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -55,11 +64,14 @@ const SuperAdminDashboard = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [usersRes, adminsRes] = await Promise.all([
+            const [usersRes, adminsRes, rolesRes] = await Promise.all([
                 fetch(`${apiBase}/api/Roles/AllUsers`, {
                     headers: { Authorization: `Bearer ${token}` },
                 }),
                 fetch(`${apiBase}/api/Roles/AllAdmins`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                fetch(`${apiBase}/api/Roles`, {
                     headers: { Authorization: `Bearer ${token}` },
                 })
             ]);
@@ -99,6 +111,17 @@ const SuperAdminDashboard = () => {
             } catch (err) {
                 setError((prev) => (prev ? prev + "; " : "") + `Admins API parse error: ${err}`);
             }
+
+            // Process Roles
+            try {
+                if (rolesRes.ok) {
+                    const rolesData = await rolesRes.json();
+                    setRoles(rolesData.roles || []);
+                }
+            } catch (err) {
+                console.error("Error fetching roles:", err);
+            }
+
             setUsers(usersData);
             setAdmins(adminsData);
         } catch (err) {
@@ -115,6 +138,39 @@ const SuperAdminDashboard = () => {
             return roles.includes("Admin") || roles.includes("SuperAdmin");
         }
         return admins.some((a) => (a.Id || a.id) === (user.Id || user.id));
+    };
+
+    const handleOpenAssignRole = (user) => {
+        setSelectedUserForRole(user);
+        setShowAssignModal(true);
+    };
+
+    const handleAssignRole = async (email, roleName) => {
+        try {
+            const response = await fetch(`${apiBase}/api/Roles/AssignRole`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    Email: email,
+                    RoleName: roleName
+                })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                setSuccess(data.message || "Role assigned successfully");
+                setShowAssignModal(false);
+                setSelectedUserForRole(null);
+                fetchData(); // Refresh list to show new roles
+            } else {
+                setError(data.message || "Failed to assign role");
+            }
+        } catch (err) {
+            setError("Network error while assigning role");
+        }
     };
 
     // Add user/admin
@@ -284,11 +340,13 @@ const SuperAdminDashboard = () => {
                     <UsersAdminsListView
                         users={users}
                         admins={admins}
+                        roles={roles} // [NEW] Pass roles for dynamic tables
                         isAlreadyAdmin={isAlreadyAdmin}
                         onAddUser={() => setShowAddModal(true)}
                         onMakeAdmin={handleMakeAdmin}
                         onDelete={handleDelete}
                         onRevokeAdmin={handleRevokeAdmin}
+                        onAssignRole={handleOpenAssignRole}
                     />
                 );
             case 'charts':
@@ -314,6 +372,7 @@ const SuperAdminDashboard = () => {
                         token={token}
                         users={users}
                         onRefreshUsers={fetchData}
+                        onRolesChange={fetchData} // [NEW] Refresh parent roles when changed here
                     />
                 );
             case 'login':
@@ -371,6 +430,19 @@ const SuperAdminDashboard = () => {
                 }}
                 onSubmit={handleAddUser}
                 allowRoleSelection={true}
+                roles={roles} // [NEW] Pass dynamic roles
+            />
+
+            {/* Assign Role Modal [NEW] */}
+            <AssignRoleModal
+                show={showAssignModal}
+                user={selectedUserForRole}
+                roles={roles}
+                onClose={() => {
+                    setShowAssignModal(false);
+                    setSelectedUserForRole(null);
+                }}
+                onAssign={handleAssignRole}
             />
         </div>
     );

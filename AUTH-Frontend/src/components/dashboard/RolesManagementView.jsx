@@ -1,7 +1,7 @@
 // src/components/dashboard/RolesManagementView.jsx
 import React, { useState, useEffect } from 'react';
 
-const RolesManagementView = ({ apiBase, token, users, onRefreshUsers }) => {
+const RolesManagementView = ({ apiBase, token, users, onRefreshUsers, onRolesChange }) => {
     const [roles, setRoles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -61,6 +61,7 @@ const RolesManagementView = ({ apiBase, token, users, onRefreshUsers }) => {
                 setNewRoleName("");
                 setShowCreateModal(false);
                 fetchRoles();
+                if (onRolesChange) onRolesChange(); // Notify parent
             } else {
                 setError(data.message || "Failed to create role");
             }
@@ -203,22 +204,24 @@ const RolesManagementView = ({ apiBase, token, users, onRefreshUsers }) => {
                 </div>
                 <div className="p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {roles.map((role) => {
-                            const isSystemRole = systemRoles.includes(role.Name);
+                        {roles.map((role, index) => {
+                            const roleName = role.Name || role.name || (typeof role === 'string' ? role : 'Unknown Role');
+                            const roleId = role.Id || role.id || index;
+                            const isSystemRole = systemRoles.includes(roleName);
                             return (
                                 <div
-                                    key={role.Id}
+                                    key={roleId}
                                     className="border border-gray-200 rounded-lg p-4 flex justify-between items-center"
                                 >
                                     <div>
-                                        <h4 className="font-medium text-gray-900">{role.Name}</h4>
+                                        <h4 className="font-medium text-gray-900">{roleName}</h4>
                                         {isSystemRole && (
                                             <span className="text-xs text-blue-600 mt-1">System Role</span>
                                         )}
                                     </div>
                                     {!isSystemRole && (
                                         <button
-                                            onClick={() => handleDeleteRole(role.Name)}
+                                            onClick={() => handleDeleteRole(roleName)}
                                             className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
                                         >
                                             Delete

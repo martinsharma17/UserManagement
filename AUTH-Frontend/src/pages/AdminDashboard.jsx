@@ -28,15 +28,6 @@ const AdminDashboard = () => {
     // Get menu items based on permissions
     const menuItems = getAdminMenuItems(permissions);
 
-    useEffect(() => {
-        if (!token) {
-            navigate('/login');
-            return;
-        }
-        fetchUsers();
-        fetchPermissions();
-    }, [token, navigate, fetchUsers, fetchPermissions]);
-
     // Fetch admin permissions (this would come from backend)
     const fetchPermissions = useCallback(async () => {
         // In a real app, this would fetch from backend
@@ -80,6 +71,15 @@ const AdminDashboard = () => {
             setLoading(false);
         }
     }, [apiBase, token]);
+
+    useEffect(() => {
+        if (!token) {
+            navigate('/login');
+            return;
+        }
+        fetchUsers();
+        fetchPermissions();
+    }, [token, navigate, fetchUsers, fetchPermissions]);
 
     const handleAddUser = async () => {
         if (!newUser.name || !newUser.email || !newUser.password) {
