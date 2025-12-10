@@ -107,11 +107,12 @@ function AppContent() {
                   </ErrorBoundary>
                 ) : isManager ? (
                   <ManagerDashboard apiBase={API_BASE_URL} token={token} />
-                ) : isUser ? (
-                  <UserDashboard />
                 ) : (
-                  // User has token but NO valid known role? Send back to login (or access denied page)
-                  <Navigate to="/login" />
+                  // Universal Fallback:
+                  // For any other role (e.g. "User", or custom dynamic roles like "kamwalibai"),
+                  // we render the Generic/User Dashboard.
+                  // This dashboard will fetch its own permissions dynamically based on the policy system.
+                  <UserDashboard />
                 )
               ) : (
                 // USER IS NOT LOGGED IN -> Redirect to Login
