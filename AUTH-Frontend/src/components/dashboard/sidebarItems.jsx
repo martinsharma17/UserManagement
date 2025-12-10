@@ -81,6 +81,12 @@ export const SecurityIcon = ({ className = "w-5 h-5" }) => (
     </svg>
 );
 
+export const PolicyIcon = ({ className = "w-5 h-5" }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+);
+
 // SuperAdmin sidebar menu items
 export const getSuperAdminMenuItems = () => [
     { id: 'dashboard', title: 'Dashboard', icon: DashboardIcon, disabled: false },
@@ -88,36 +94,53 @@ export const getSuperAdminMenuItems = () => [
     { id: 'charts', title: 'Charts & Analytics', icon: ChartsIcon, disabled: false },
     { id: 'access', title: 'Access Management', icon: AccessIcon, disabled: false },
     { id: 'roles', title: 'Roles & Permissions', icon: RolesIcon, disabled: false },
-    { id: 'reports', title: 'Reports', icon: ReportsIcon, disabled: true }, // For future use
-    { id: 'audit', title: 'Audit Logs', icon: AuditIcon, disabled: true }, // For future use
-    { id: 'notifications', title: 'Notifications', icon: NotificationsIcon, disabled: true }, // For future use
-    { id: 'settings', title: 'Settings', icon: SettingsIcon, disabled: true }, // For future use
-    { id: 'security', title: 'Security', icon: SecurityIcon, disabled: true }, // For future use
-    { id: 'backup', title: 'Backup & Restore', icon: BackupIcon, disabled: true }, // For future use
+    { id: 'policies', title: 'Policy Editor', icon: PolicyIcon, disabled: false },
+    { id: 'reports', title: 'Reports', icon: ReportsIcon, disabled: false },
+    { id: 'audit', title: 'Audit Logs', icon: AuditIcon, disabled: false },
+    { id: 'notifications', title: 'Notifications', icon: NotificationsIcon, disabled: false },
+    { id: 'settings', title: 'Settings', icon: SettingsIcon, disabled: false },
+    { id: 'security', title: 'Security', icon: SecurityIcon, disabled: false },
+    { id: 'backup', title: 'Backup & Restore', icon: BackupIcon, disabled: false },
     { id: 'login', title: 'Login', icon: LoginIcon, disabled: false },
     { id: 'register', title: 'Register', icon: RegisterIcon, disabled: false },
 ];
 
-// Admin sidebar menu items (filtered based on permissions)
+export const TaskIcon = ({ className = "w-5 h-5" }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+    </svg>
+);
+
+export const ProjectIcon = ({ className = "w-5 h-5" }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+    </svg>
+);
+
+// Admin sidebar menu items
 export const getAdminMenuItems = (permissions = {}) => {
+    // START: Full Unified List (Matches Policy Resources)
     const allItems = [
         { id: 'dashboard', title: 'Dashboard', icon: DashboardIcon, permission: 'dashboard' },
-        { id: 'users', title: 'Assigned Users', icon: UsersIcon, permission: 'view_users' },
-        { id: 'charts', title: 'Charts', icon: ChartsIcon, permission: 'view_charts' },
+        { id: 'users', title: 'Users & Admins', icon: UsersIcon, permission: 'view_users' },
+        { id: 'roles', title: 'Roles & Permissions', icon: RolesIcon, permission: 'view_roles' },
+        { id: 'policies', title: 'Policy Editor', icon: PolicyIcon, permission: 'view_policies' },
+        { id: 'charts', title: 'Charts & Analytics', icon: ChartsIcon, permission: 'view_charts' },
+        { id: 'projects', title: 'Projects', icon: ProjectIcon, permission: 'view_projects' },
+        { id: 'tasks', title: 'Tasks', icon: TaskIcon, permission: 'view_tasks' },
         { id: 'reports', title: 'Reports', icon: ReportsIcon, permission: 'view_reports' },
-        { id: 'login', title: 'Login', icon: LoginIcon, permission: null }, // Always available
-        { id: 'register', title: 'Register', icon: RegisterIcon, permission: null }, // Always available
+        { id: 'audit', title: 'Audit Logs', icon: AuditIcon, permission: 'view_audit' },
+        { id: 'notifications', title: 'Notifications', icon: NotificationsIcon, permission: 'view_notifications' },
+        { id: 'settings', title: 'Settings', icon: SettingsIcon, permission: 'view_settings' },
+        { id: 'security', title: 'Security', icon: SecurityIcon, permission: 'view_security' },
+        { id: 'backup', title: 'Backup & Restore', icon: BackupIcon, permission: 'view_backup' },
     ];
+    // END: Full Unified List
 
-    // Filter based on permissions (if no permissions object, show default items)
     if (!permissions || Object.keys(permissions).length === 0) {
+        // Fallback default
         return allItems.filter(item =>
-            item.permission === null ||
-            item.id === 'dashboard' ||
-            item.id === 'users' ||
-            item.id === 'charts' ||
-            item.id === 'login' ||
-            item.id === 'register'
+            ['dashboard', 'users', 'charts'].includes(item.id)
         );
     }
 
@@ -126,29 +149,28 @@ export const getAdminMenuItems = (permissions = {}) => {
     );
 };
 
-// Manager sidebar menu items (filtered based on permissions)
+// Manager sidebar menu items
 export const getManagerMenuItems = (permissions = {}) => {
+    // Copy of Unified List
     const allItems = [
         { id: 'dashboard', title: 'Dashboard', icon: DashboardIcon, permission: 'dashboard' },
-        { id: 'users', title: 'Assigned Users', icon: UsersIcon, permission: 'view_users' },
-        { id: 'charts', title: 'Charts', icon: ChartsIcon, permission: 'view_charts' },
+        { id: 'users', title: 'Users & Admins', icon: UsersIcon, permission: 'view_users' },
+        { id: 'roles', title: 'Roles & Permissions', icon: RolesIcon, permission: 'view_roles' },
+        { id: 'policies', title: 'Policy Editor', icon: PolicyIcon, permission: 'view_policies' },
+        { id: 'charts', title: 'Charts & Analytics', icon: ChartsIcon, permission: 'view_charts' },
+        { id: 'projects', title: 'Projects', icon: ProjectIcon, permission: 'view_projects' },
+        { id: 'tasks', title: 'Tasks', icon: TaskIcon, permission: 'view_tasks' },
         { id: 'reports', title: 'Reports', icon: ReportsIcon, permission: 'view_reports' },
         { id: 'audit', title: 'Audit Logs', icon: AuditIcon, permission: 'view_audit' },
-        { id: 'login', title: 'Login', icon: LoginIcon, permission: null }, // Always available
-        { id: 'register', title: 'Register', icon: RegisterIcon, permission: null }, // Always available
+        { id: 'notifications', title: 'Notifications', icon: NotificationsIcon, permission: 'view_notifications' },
+        { id: 'settings', title: 'Settings', icon: SettingsIcon, permission: 'view_settings' },
+        { id: 'security', title: 'Security', icon: SecurityIcon, permission: 'view_security' },
+        { id: 'backup', title: 'Backup & Restore', icon: BackupIcon, permission: 'view_backup' },
     ];
 
-    // Filter based on permissions (if no permissions object, show default items)
     if (!permissions || Object.keys(permissions).length === 0) {
         return allItems.filter(item =>
-            item.permission === null ||
-            item.id === 'dashboard' ||
-            item.id === 'users' ||
-            item.id === 'charts' ||
-            item.id === 'reports' ||
-            item.id === 'audit' ||
-            item.id === 'login' ||
-            item.id === 'register'
+            ['dashboard', 'users', 'charts'].includes(item.id)
         );
     }
 
@@ -158,9 +180,32 @@ export const getManagerMenuItems = (permissions = {}) => {
 };
 
 // User sidebar menu items
-export const getUserMenuItems = () => [
-    { id: 'dashboard', title: 'Dashboard', icon: DashboardIcon, disabled: false },
-    { id: 'settings', title: 'Settings', icon: SettingsIcon, disabled: false },
-    { id: 'notifications', title: 'Notifications', icon: NotificationsIcon, disabled: false },
-];
+export const getUserMenuItems = (permissions = {}) => {
+    // Copy of Unified List
+    const allItems = [
+        { id: 'dashboard', title: 'Dashboard', icon: DashboardIcon, permission: 'dashboard' },
+        { id: 'users', title: 'Users & Admins', icon: UsersIcon, permission: 'view_users' },
+        { id: 'roles', title: 'Roles & Permissions', icon: RolesIcon, permission: 'view_roles' },
+        { id: 'policies', title: 'Policy Editor', icon: PolicyIcon, permission: 'view_policies' },
+        { id: 'charts', title: 'Charts & Analytics', icon: ChartsIcon, permission: 'view_charts' },
+        { id: 'projects', title: 'Projects', icon: ProjectIcon, permission: 'view_projects' },
+        { id: 'tasks', title: 'Tasks', icon: TaskIcon, permission: 'view_tasks' },
+        { id: 'reports', title: 'Reports', icon: ReportsIcon, permission: 'view_reports' },
+        { id: 'audit', title: 'Audit Logs', icon: AuditIcon, permission: 'view_audit' },
+        { id: 'notifications', title: 'Notifications', icon: NotificationsIcon, permission: 'view_notifications' },
+        { id: 'settings', title: 'Settings', icon: SettingsIcon, permission: 'view_settings' },
+        { id: 'security', title: 'Security', icon: SecurityIcon, permission: 'view_security' },
+        { id: 'backup', title: 'Backup & Restore', icon: BackupIcon, permission: 'view_backup' },
+    ];
+
+    if (!permissions || Object.keys(permissions).length === 0) {
+        return allItems.filter(item =>
+            ['dashboard'].includes(item.id)
+        );
+    }
+
+    return allItems.filter(item =>
+        item.permission === null || permissions[item.permission] === true
+    );
+};
 

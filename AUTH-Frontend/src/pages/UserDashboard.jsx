@@ -1,11 +1,12 @@
 // src/pages/UserDashboard.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/dashboard/Sidebar.jsx';
 import { getUserMenuItems } from '../components/dashboard/sidebarItems.jsx';
 import SettingsView from '../components/dashboard/SettingsView.jsx';
 import NotificationsView from '../components/dashboard/NotificationsView.jsx';
+import AdminResourceView from '../components/dashboard/admin/AdminResourceView.jsx'; // Reuse generic resource view
 
 const UserDashboard = () => {
     const { user, logout } = useAuth();
@@ -14,8 +15,157 @@ const UserDashboard = () => {
     // State for sidebar and active view
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [activeView, setActiveView] = useState('dashboard');
+    const [permissions, setPermissions] = useState({});
 
-    const menuItems = getUserMenuItems();
+    // Data state for views if permissions allow
+    const [usersList, setUsersList] = useState([]);
+
+    // Fetch permissions (Dynamic from Policy System)
+    const fetchPermissions = useCallback(async () => {
+        const systemPoliciesJson = localStorage.getItem('system_policies');
+        let computedPermissions = {
+            view_users: false,
+            // defaults ...
+        };
+
+        if (systemPoliciesJson) {
+            const systemPolicies = JSON.parse(systemPoliciesJson);
+
+            // Get user roles
+            let userRoles = [];
+            if (user?.Role) userRoles = Array.isArray(user.Role) ? user.Role : [user.Role];
+            else if (user?.roles) userRoles = Array.isArray(user.roles) ? user.roles : [user.roles];
+            else if (user?.role) userRoles = Array.isArray(user.role) ? user.role : [user.role];
+            else userRoles = ['User'];
+
+            const normalizedUserRoles = userRoles.map(r => r.toLowerCase());
+            let hasPolicy = false;
+
+            let tempPerms = {
+                users: { create: false, read: false, update: false, delete: false, sidebar: false },
+                analytics: { create: false, read: false, update: false, delete: false, sidebar: false },
+                tasks: { create: false, read: false, update: false, delete: false, sidebar: false },
+                projects: { create: false, read: false, update: false, delete: false, sidebar: false },
+                reports: { read: false, sidebar: false },
+                audit: { read: false, sidebar: false },
+                roles: { read: false, sidebar: false },
+                policies: { read: false, sidebar: false },
+                settings: { read: false, sidebar: false },
+                notifications: { read: false, sidebar: false },
+                security: { read: false, sidebar: false },
+                backup: { read: false, sidebar: false }
+            };
+
+            Object.keys(systemPolicies).forEach(policyRoleName => {
+                if (normalizedUserRoles.includes(policyRoleName.toLowerCase())) {
+                    const policy = systemPolicies[policyRoleName];
+                    hasPolicy = true;
+
+                    // Helper to map generic permissions
+                    // Users
+                    if (policy.users?.read) tempPerms.users.read = true;
+                    if (policy.users?.sidebar) tempPerms.users.sidebar = true;
+
+                    // Analytics
+                    if (policy.analytics?.read) tempPerms.analytics.read = true;
+                    if (policy.analytics?.sidebar) tempPerms.analytics.sidebar = true;
+                    if (policy.charts?.read) tempPerms.analytics.read = true; // Fallback helper
+                    if (policy.charts?.sidebar) tempPerms.analytics.sidebar = true;
+
+                    // Tasks
+                    if (policy.tasks?.create) tempPerms.tasks.create = true;
+                    if (policy.tasks?.read) tempPerms.tasks.read = true;
+                    if (policy.tasks?.update) tempPerms.tasks.update = true;
+                    if (policy.tasks?.delete) tempPerms.tasks.delete = true;
+                    if (policy.tasks?.sidebar) tempPerms.tasks.sidebar = true;
+
+                    // Projects
+                    if (policy.projects?.create) tempPerms.projects.create = true;
+                    if (policy.projects?.read) tempPerms.projects.read = true;
+                    if (policy.projects?.update) tempPerms.projects.update = true;
+                    if (policy.projects?.delete) tempPerms.projects.delete = true;
+                    if (policy.projects?.sidebar) tempPerms.projects.sidebar = true;
+
+                    // Others
+                    if (policy.reports?.read) tempPerms.reports.read = true;
+                    if (policy.reports?.sidebar) tempPerms.reports.sidebar = true;
+
+                    if (policy.audit?.read) tempPerms.audit.read = true;
+                    if (policy.audit?.sidebar) tempPerms.audit.sidebar = true;
+
+                    if (policy.roles?.read) tempPerms.roles.read = true;
+                    if (policy.roles?.sidebar) tempPerms.roles.sidebar = true;
+
+                    if (policy.policies?.read) tempPerms.policies.read = true;
+                    if (policy.policies?.sidebar) tempPerms.policies.sidebar = true;
+
+                    if (policy.settings?.read) tempPerms.settings.read = true;
+                    if (policy.settings?.sidebar) tempPerms.settings.sidebar = true;
+
+                    if (policy.notifications?.read) tempPerms.notifications.read = true;
+                    if (policy.notifications?.sidebar) tempPerms.notifications.sidebar = true;
+
+                    if (policy.security?.read) tempPerms.security.read = true;
+                    if (policy.security?.sidebar) tempPerms.security.sidebar = true;
+
+                    if (policy.backup?.read) tempPerms.backup.read = true;
+                    if (policy.backup?.sidebar) tempPerms.backup.sidebar = true;
+                }
+            });
+
+            if (hasPolicy) {
+                // VIEW_ = Sidebar Visibility
+                computedPermissions.view_users = tempPerms.users.sidebar;
+                computedPermissions.read_users = tempPerms.users.read;
+
+                computedPermissions.view_charts = tempPerms.analytics.sidebar;
+                computedPermissions.read_charts = tempPerms.analytics.read;
+
+                computedPermissions.view_tasks = tempPerms.tasks.sidebar;
+                computedPermissions.read_tasks = tempPerms.tasks.read;
+                computedPermissions.create_tasks = tempPerms.tasks.create;
+                computedPermissions.update_tasks = tempPerms.tasks.update;
+                computedPermissions.delete_tasks = tempPerms.tasks.delete;
+
+                computedPermissions.view_projects = tempPerms.projects.sidebar;
+                computedPermissions.read_projects = tempPerms.projects.read;
+                computedPermissions.create_projects = tempPerms.projects.create;
+                computedPermissions.update_projects = tempPerms.projects.update;
+                computedPermissions.delete_projects = tempPerms.projects.delete;
+
+                computedPermissions.view_reports = tempPerms.reports.sidebar;
+                computedPermissions.read_reports = tempPerms.reports.read;
+
+                computedPermissions.view_audit = tempPerms.audit.sidebar;
+                computedPermissions.read_audit = tempPerms.audit.read;
+
+                computedPermissions.view_roles = tempPerms.roles.sidebar;
+                computedPermissions.read_roles = tempPerms.roles.read;
+
+                computedPermissions.view_policies = tempPerms.policies.sidebar;
+                computedPermissions.read_policies = tempPerms.policies.read;
+
+                computedPermissions.view_settings = tempPerms.settings.sidebar;
+                computedPermissions.read_settings = tempPerms.settings.read;
+
+                computedPermissions.view_notifications = tempPerms.notifications.sidebar;
+                computedPermissions.read_notifications = tempPerms.notifications.read;
+
+                computedPermissions.view_security = tempPerms.security.sidebar;
+                computedPermissions.read_security = tempPerms.security.read;
+
+                computedPermissions.view_backup = tempPerms.backup.sidebar;
+                computedPermissions.read_backup = tempPerms.backup.read;
+            }
+        }
+        setPermissions(computedPermissions);
+    }, [user]);
+
+    useEffect(() => {
+        fetchPermissions();
+    }, [fetchPermissions]);
+
+    const menuItems = getUserMenuItems(permissions);
 
     const handleLogout = () => {
         logout();
@@ -34,7 +184,6 @@ const UserDashboard = () => {
                                 <h1 className="text-3xl font-bold text-gray-900">Welcome, {user?.name || 'User'}!</h1>
                                 <p className="text-gray-600 mt-2">Your personal dashboard</p>
                             </div>
-                            {/* Logout button removed from here as it's now in the sidebar */}
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -73,10 +222,57 @@ const UserDashboard = () => {
                         </div>
                     </div>
                 );
+            case 'users':
+                if (!permissions.read_users) return <div className="p-8 text-center text-red-500">Access Denied (Requires Read Permission)</div>;
+                return <div className="p-8 text-center text-gray-500">Users View (Requires Fetch Logic)</div>;
+            case 'roles':
+                if (!permissions.read_roles) return <div className="p-8 text-center text-red-500">Access Denied (Requires Read Permission)</div>;
+                return <div className="p-8 text-center text-gray-500">Roles View (Coming Soon)</div>;
+            case 'policies':
+                if (!permissions.read_policies) return <div className="p-8 text-center text-red-500">Access Denied (Requires Read Permission)</div>;
+                return <div className="p-8 text-center text-gray-500">Policy Editor (Restricted)</div>;
+            case 'charts':
+                if (!permissions.read_charts) return <div className="p-8 text-center text-red-500">Access Denied (Requires Read Permission)</div>;
+                return <div className="p-8 text-center text-gray-500">Analytics View</div>;
+            case 'tasks':
+                if (!permissions.read_tasks) return <div className="p-8 text-center text-red-500">Access Denied (Requires Read Permission)</div>;
+                return (
+                    <AdminResourceView
+                        resourceName="Task"
+                        canCreate={permissions.create_tasks}
+                        canUpdate={permissions.update_tasks}
+                        canDelete={permissions.delete_tasks}
+                    />
+                );
+            case 'projects':
+                if (!permissions.read_projects) return <div className="p-8 text-center text-red-500">Access Denied (Requires Read Permission)</div>;
+                return (
+                    <AdminResourceView
+                        resourceName="Project"
+                        canCreate={permissions.create_projects}
+                        canUpdate={permissions.update_projects}
+                        canDelete={permissions.delete_projects}
+                    />
+                );
+            case 'reports':
+                if (!permissions.read_reports) return <div className="p-8 text-center text-red-500">Access Denied (Requires Read Permission)</div>;
+                return <div className="p-8 text-center text-gray-500">Reports Module</div>;
+            case 'audit':
+                if (!permissions.read_audit) return <div className="p-8 text-center text-red-500">Access Denied (Requires Read Permission)</div>;
+                return <div className="p-8 text-center text-gray-500">Audit Logs Module</div>;
             case 'settings':
+                // Check read OR view? Usually settings is "open" but let's enforce read if desired
+                if (!permissions.read_settings && permissions.read_settings !== undefined) return <div className="p-8 text-center text-red-500">Access Denied</div>;
                 return <SettingsView />;
             case 'notifications':
+                if (!permissions.read_notifications && permissions.read_notifications !== undefined) return <div className="p-8 text-center text-red-500">Access Denied</div>;
                 return <NotificationsView />;
+            case 'security':
+                if (!permissions.read_security) return <div className="p-8 text-center text-red-500">Access Denied</div>;
+                return <div className="p-8 text-center text-gray-500">Security Settings</div>;
+            case 'backup':
+                if (!permissions.read_backup) return <div className="p-8 text-center text-red-500">Access Denied</div>;
+                return <div className="p-8 text-center text-gray-500">Backup & Restore</div>;
             default:
                 return <div>View not found</div>;
         }

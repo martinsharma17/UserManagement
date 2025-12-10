@@ -13,6 +13,7 @@ import LoginFormView from '../components/dashboard/LoginFormView.jsx';
 import RegisterFormView from '../components/dashboard/RegisterFormView.jsx';
 import AddUserModal from '../components/dashboard/AddUserModal.jsx';
 import AssignRoleModal from '../components/dashboard/AssignRoleModal.jsx';
+import PolicyEditorView from '../components/dashboard/PolicyEditorView.jsx'; // [NEW]
 
 const SuperAdminDashboard = () => {
     const [users, setUsers] = useState([]);
@@ -372,9 +373,27 @@ const SuperAdminDashboard = () => {
                         token={token}
                         users={users}
                         onRefreshUsers={fetchData}
-                        onRolesChange={fetchData} // [NEW] Refresh parent roles when changed here
+                        onRolesChange={fetchData}
                     />
                 );
+            case 'policies':
+                return (
+                    <PolicyEditorView
+                        roles={roles}
+                    />
+                );
+            case 'settings':
+                return <SettingsView />;
+            case 'notifications':
+                return <NotificationsView />;
+            case 'reports':
+                return <div className="p-8 text-center text-gray-500">Reports Module (Coming Soon)</div>;
+            case 'audit':
+                return <div className="p-8 text-center text-gray-500">Audit Logs Module (Coming Soon)</div>;
+            case 'security':
+                return <div className="p-8 text-center text-gray-500">Security Settings Module (Coming Soon)</div>;
+            case 'backup':
+                return <div className="p-8 text-center text-gray-500">Backup & Restore Module (Coming Soon)</div>;
             case 'login':
                 return <LoginFormView />;
             case 'register':

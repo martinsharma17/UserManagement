@@ -1,7 +1,7 @@
 // src/components/dashboard/admin/AdminUsersListView.jsx
 import React from 'react';
 
-const AdminUsersListView = ({ users, onAddUser, onDelete }) => {
+const AdminUsersListView = ({ users, onAddUser, onDelete, canEdit }) => {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -54,12 +54,27 @@ const AdminUsersListView = ({ users, onAddUser, onDelete }) => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <button
-                                                onClick={() => onDelete(user.id || user.Id)}
-                                                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-                                            >
-                                                Delete
-                                            </button>
+                                            <div className="flex space-x-2">
+                                                {/* Edit Action - Enforced by Policy */}
+                                                {canEdit && (
+                                                    <button
+                                                        onClick={() => alert("Edit User functionality would open here")}
+                                                        className="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                )}
+
+                                                {/* Delete Action - Already enforced by parent passing null/undefined if disabled */}
+                                                {onDelete && (
+                                                    <button
+                                                        onClick={() => onDelete(user.id || user.Id)}
+                                                        className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
