@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react';
  * Main Panel: Configure Permissions for selected Role.
  */
 const PolicyEditorView = ({ roles }) => {
-    // Available Resources
+    // Available Resources with Hierarchy
     const resources = [
         { id: 'users', name: 'Users & Admins' },
         { id: 'roles', name: 'Roles & Permissions' },
@@ -17,7 +17,9 @@ const PolicyEditorView = ({ roles }) => {
         { id: 'charts', name: 'Charts & Analytics' },
         { id: 'settings', name: 'Settings' },
         { id: 'projects', name: 'Projects' },
-        { id: 'tasks', name: 'Tasks' },
+        { id: 'tasks', name: 'Tasks (Overview)' },
+        { id: 'task_list', name: 'List', parent: 'tasks' }, // Child of tasks
+        { id: 'task_kanban', name: 'Kanban', parent: 'tasks' }, // Child of tasks
         { id: 'reports', name: 'Reports' },
         { id: 'audit', name: 'Audit Logs' },
         { id: 'notifications', name: 'Notifications' },
@@ -84,16 +86,41 @@ const PolicyEditorView = ({ roles }) => {
     const handlePermissionChange = (roleName, resourceId, actionId) => {
         setPolicies(prev => {
             const rolePolicy = prev[roleName] || {};
-            const resourcePolicy = rolePolicy[resourceId] || {};
+
+            // Deep copy specific role policy to avoid mutation issues
+            const newRolePolicy = JSON.parse(JSON.stringify(rolePolicy));
+
+            // Initialize resource policy if missing
+            if (!newRolePolicy[resourceId]) newRolePolicy[resourceId] = {};
+
+            const currentVal = newRolePolicy[resourceId][actionId];
+            const newVal = !currentVal;
+
+            newRolePolicy[resourceId][actionId] = newVal;
+
+            // Cascading Logic for Sidebar Visibility
+            if (actionId === 'sidebar') {
+                const targetResource = resources.find(r => r.id === resourceId);
+
+                // 1. Parent OFF -> Turn OFF all Children
+                if (newVal === false) {
+                    const children = resources.filter(r => r.parent === resourceId);
+                    children.forEach(child => {
+                        if (!newRolePolicy[child.id]) newRolePolicy[child.id] = {};
+                        newRolePolicy[child.id].sidebar = false;
+                    });
+                }
+
+                // 2. Child ON -> Turn ON Parent
+                if (newVal === true && targetResource?.parent) {
+                    if (!newRolePolicy[targetResource.parent]) newRolePolicy[targetResource.parent] = {};
+                    newRolePolicy[targetResource.parent].sidebar = true;
+                }
+            }
+
             return {
                 ...prev,
-                [roleName]: {
-                    ...rolePolicy,
-                    [resourceId]: {
-                        ...resourcePolicy,
-                        [actionId]: !resourcePolicy[actionId]
-                    }
-                }
+                [roleName]: newRolePolicy
             };
         });
     };
@@ -129,7 +156,7 @@ const PolicyEditorView = ({ roles }) => {
                 <div className="text-sm text-green-600 bg-green-50 px-4 py-3 rounded-lg border border-green-100 flex items-center gap-2">
                     <span className="font-semibold text-lg">💡</span>
                     <span>
-                        Use the <strong>Sidebar</strong> toggle to control menu visibility. Use <strong>Read</strong> to control data access.
+                        Use the <strong>Sidebar</strong> toggle to control menu visibility. Turning off a <strong>Parent</strong> hides its children.
                     </span>
                 </div>
             </div>
@@ -204,16 +231,23 @@ const PolicyEditorView = ({ roles }) => {
                                             const rolePolicy = policies[activeRole] || {};
                                             const resPolicy = rolePolicy[resource.id] || {};
                                             const isAlt = idx % 2 === 0;
+                                            const isChild = !!resource.parent;
 
                                             return (
                                                 <tr key={resource.id} className={`group hover:bg-gray-50 transition-colors ${isAlt ? 'bg-white' : 'bg-[rgba(249,250,251,0.5)]'}`}>
-                                                    <td className="py-4 px-6">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                                                    <td className="py-4 px-6 relative">
+                                                        {isChild && (
+                                                            <div className="absolute left-10 top-0 bottom-0 w-px bg-gray-200 h-1/2 translate-y-full transform -translate-y-1/2"></div>
+                                                        )}
+                                                        <div className={`flex items-center gap-3 ${isChild ? 'pl-8' : ''}`}>
+                                                            {isChild && (
+                                                                <span className="text-gray-300 -ml-4">└──</span>
+                                                            )}
+                                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors ${isChild ? 'bg-gray-50 scale-90' : 'bg-gray-100'}`}>
                                                                 <span className="text-xs font-bold">{resource.name[0]}</span>
                                                             </div>
                                                             <div>
-                                                                <p className="font-medium text-gray-700">{resource.name}</p>
+                                                                <p className={`font-medium ${isChild ? 'text-gray-600' : 'text-gray-700'}`}>{resource.name}</p>
                                                                 <p className="text-[10px] text-gray-400">id: {resource.id}</p>
                                                             </div>
                                                         </div>
@@ -272,7 +306,6 @@ const PolicyEditorView = ({ roles }) => {
                                                                             ${isChecked ? gradientClass + ' ' + shadowClass : 'bg-gray-200 hover:bg-gray-300'}
                                                                         `}
                                                                         title={isChecked ? `Wait for it...` : `Enable ${action.name}`}
-                                                                    // Title is just a placeholder, the visual is clear
                                                                     >
                                                                         {/* The Thumb */}
                                                                         <span

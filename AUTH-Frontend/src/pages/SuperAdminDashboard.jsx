@@ -14,6 +14,8 @@ import RegisterFormView from '../components/dashboard/RegisterFormView.jsx';
 import AddUserModal from '../components/dashboard/AddUserModal.jsx';
 import AssignRoleModal from '../components/dashboard/AssignRoleModal.jsx';
 import PolicyEditorView from '../components/dashboard/PolicyEditorView.jsx'; // [NEW]
+import SettingsView from '../components/dashboard/SettingsView.jsx';
+import NotificationsView from '../components/dashboard/NotificationsView.jsx';
 
 const SuperAdminDashboard = () => {
     const [users, setUsers] = useState([]);
@@ -35,7 +37,7 @@ const SuperAdminDashboard = () => {
     const [activeView, setActiveView] = useState("dashboard");
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
-    const { token, logout, apiBase } = useAuth();
+    const { token, logout, apiBase, user } = useAuth();
     const navigate = useNavigate();
     const menuItems = getSuperAdminMenuItems();
 
@@ -394,8 +396,60 @@ const SuperAdminDashboard = () => {
                 return <div className="p-8 text-center text-gray-500">Security Settings Module (Coming Soon)</div>;
             case 'backup':
                 return <div className="p-8 text-center text-gray-500">Backup & Restore Module (Coming Soon)</div>;
-            case 'login':
-                return <LoginFormView />;
+            case 'task_list':
+                return (
+                    <div className="p-6">
+                        <h2 className="text-2xl font-bold mb-4">Task List</h2>
+                        <div className="bg-white rounded-lg shadow overflow-hidden">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignee</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {[1, 2, 3].map((i) => (
+                                        <tr key={i}>
+                                            <td className="px-6 py-4 whitespace-nowrap">Task {i}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                    Active
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">User {i}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                );
+            case 'task_kanban':
+                return (
+                    <div className="p-6">
+                        <h2 className="text-2xl font-bold mb-4">Kanban Board</h2>
+                        <div className="flex gap-4 overflow-x-auto pb-4">
+                            {['To Do', 'In Progress', 'Done'].map((col) => (
+                                <div key={col} className="min-w-[300px] bg-gray-100 rounded-lg p-4">
+                                    <h3 className="font-semibold mb-4 text-gray-700">{col}</h3>
+                                    <div className="space-y-3">
+                                        {[1, 2].map((i) => (
+                                            <div key={i} className="bg-white p-3 rounded shadow-sm border border-gray-200">
+                                                <p className="font-medium">Task {i} - {col}</p>
+                                                <div className="mt-2 flex justify-between text-xs text-gray-500">
+                                                    <span>Dec {10 + i}</span>
+                                                    <span>Avatar</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
             case 'register':
                 return <RegisterFormView />;
             default:
@@ -416,6 +470,7 @@ const SuperAdminDashboard = () => {
                 setActiveView={setActiveView}
                 menuItems={menuItems}
                 onLogout={handleLogout}
+                user={user}
             />
 
             {/* Main Content */}

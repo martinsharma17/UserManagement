@@ -7,6 +7,8 @@ import { getUserMenuItems } from '../components/dashboard/sidebarItems.jsx';
 import SettingsView from '../components/dashboard/SettingsView.jsx';
 import NotificationsView from '../components/dashboard/NotificationsView.jsx';
 import AdminResourceView from '../components/dashboard/admin/AdminResourceView.jsx'; // Reuse generic resource view
+import TaskListView from '../components/dashboard/tasks/TaskListView.jsx';
+import TaskKanbanView from '../components/dashboard/tasks/TaskKanbanView.jsx';
 
 const UserDashboard = () => {
     const { user, logout } = useAuth();
@@ -45,6 +47,8 @@ const UserDashboard = () => {
                 users: { create: false, read: false, update: false, delete: false, sidebar: false },
                 analytics: { create: false, read: false, update: false, delete: false, sidebar: false },
                 tasks: { create: false, read: false, update: false, delete: false, sidebar: false },
+                task_list: { create: false, read: false, update: false, delete: false, sidebar: false },
+                task_kanban: { create: false, read: false, update: false, delete: false, sidebar: false },
                 projects: { create: false, read: false, update: false, delete: false, sidebar: false },
                 reports: { read: false, sidebar: false },
                 audit: { read: false, sidebar: false },
@@ -78,6 +82,20 @@ const UserDashboard = () => {
                     if (policy.tasks?.update) tempPerms.tasks.update = true;
                     if (policy.tasks?.delete) tempPerms.tasks.delete = true;
                     if (policy.tasks?.sidebar) tempPerms.tasks.sidebar = true;
+
+                    // Granular Task List
+                    if (policy.task_list?.create) tempPerms.task_list.create = true;
+                    if (policy.task_list?.read) tempPerms.task_list.read = true;
+                    if (policy.task_list?.update) tempPerms.task_list.update = true;
+                    if (policy.task_list?.delete) tempPerms.task_list.delete = true;
+                    if (policy.task_list?.sidebar) tempPerms.task_list.sidebar = true;
+
+                    // Granular Task Kanban
+                    if (policy.task_kanban?.create) tempPerms.task_kanban.create = true;
+                    if (policy.task_kanban?.read) tempPerms.task_kanban.read = true;
+                    if (policy.task_kanban?.update) tempPerms.task_kanban.update = true;
+                    if (policy.task_kanban?.delete) tempPerms.task_kanban.delete = true;
+                    if (policy.task_kanban?.sidebar) tempPerms.task_kanban.sidebar = true;
 
                     // Projects
                     if (policy.projects?.create) tempPerms.projects.create = true;
@@ -126,6 +144,20 @@ const UserDashboard = () => {
                 computedPermissions.create_tasks = tempPerms.tasks.create;
                 computedPermissions.update_tasks = tempPerms.tasks.update;
                 computedPermissions.delete_tasks = tempPerms.tasks.delete;
+
+                // Granular Task List Permissions
+                computedPermissions.view_task_list = !!tempPerms.task_list?.sidebar;
+                computedPermissions.read_task_list = !!tempPerms.task_list?.read;
+                computedPermissions.create_task_list = !!tempPerms.task_list?.create;
+                computedPermissions.update_task_list = !!tempPerms.task_list?.update;
+                computedPermissions.delete_task_list = !!tempPerms.task_list?.delete;
+
+                // Granular Task Kanban Permissions
+                computedPermissions.view_task_kanban = !!tempPerms.task_kanban?.sidebar;
+                computedPermissions.read_task_kanban = !!tempPerms.task_kanban?.read;
+                computedPermissions.create_task_kanban = !!tempPerms.task_kanban?.create;
+                computedPermissions.update_task_kanban = !!tempPerms.task_kanban?.update;
+                computedPermissions.delete_task_kanban = !!tempPerms.task_kanban?.delete;
 
                 computedPermissions.view_projects = tempPerms.projects.sidebar;
                 computedPermissions.read_projects = tempPerms.projects.read;
@@ -244,6 +276,30 @@ const UserDashboard = () => {
                         canDelete={permissions.delete_tasks}
                     />
                 );
+            case 'task_list':
+                if (!permissions.read_task_list) return <div className="p-8 text-center text-red-500">Access Denied</div>;
+                return (
+                    <TaskListView
+                        permissions={{
+                            create: permissions.create_task_list,
+                            read: permissions.read_task_list,
+                            update: permissions.update_task_list,
+                            delete: permissions.delete_task_list
+                        }}
+                    />
+                );
+            case 'task_kanban':
+                if (!permissions.read_task_kanban) return <div className="p-8 text-center text-red-500">Access Denied</div>;
+                return (
+                    <TaskKanbanView
+                        permissions={{
+                            create: permissions.create_task_kanban,
+                            read: permissions.read_task_kanban,
+                            update: permissions.update_task_kanban,
+                            delete: permissions.delete_task_kanban
+                        }}
+                    />
+                );
             case 'projects':
                 if (!permissions.read_projects) return <div className="p-8 text-center text-red-500">Access Denied (Requires Read Permission)</div>;
                 return (
@@ -288,6 +344,7 @@ const UserDashboard = () => {
                 setActiveView={setActiveView}
                 menuItems={menuItems}
                 onLogout={handleLogout}
+                user={user}
             />
 
             {/* Main Content Area */}

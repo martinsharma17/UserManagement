@@ -101,6 +101,16 @@ export const getSuperAdminMenuItems = () => [
     { id: 'settings', title: 'Settings', icon: SettingsIcon, disabled: false },
     { id: 'security', title: 'Security', icon: SecurityIcon, disabled: false },
     { id: 'backup', title: 'Backup & Restore', icon: BackupIcon, disabled: false },
+    {
+        id: 'tasks',
+        title: 'Task',
+        icon: TaskIcon,
+        disabled: false,
+        children: [
+            { id: 'task_list', title: 'List' },
+            { id: 'task_kanban', title: 'Kanban' }
+        ]
+    },
     { id: 'login', title: 'Login', icon: LoginIcon, disabled: false },
     { id: 'register', title: 'Register', icon: RegisterIcon, disabled: false },
 ];
@@ -117,6 +127,31 @@ export const ProjectIcon = ({ className = "w-5 h-5" }) => (
     </svg>
 );
 
+// Helper to filter items and their children recursively
+const filterMenuItems = (items, permissions) => {
+    return items.reduce((acc, item) => {
+        // Check if the item itself is permitted
+        const isPermitted = item.permission === null || permissions[item.permission] === true;
+
+        if (isPermitted) {
+            // If it has children, filter them too
+            if (item.children) {
+                const filteredChildren = filterMenuItems(item.children, permissions);
+
+                // Only include the parent if it has permitted children or if it's a direct link (children is optional/empty might be valid depending on design, but here we likely want the parent to show if it has children OR if it's meant to show)
+                // Actually, if a parent has a permissions check (like 'view_tasks'), it should show. 
+                // But if we want to hide it if ALL children are hidden? The user request implies checking per item.
+                // Let's just keep the parent if it passes its own permission check, but update its children to only include permitted ones.
+
+                acc.push({ ...item, children: filteredChildren });
+            } else {
+                acc.push(item);
+            }
+        }
+        return acc;
+    }, []);
+};
+
 // Admin sidebar menu items
 export const getAdminMenuItems = (permissions = {}) => {
     // START: Full Unified List (Matches Policy Resources)
@@ -127,7 +162,16 @@ export const getAdminMenuItems = (permissions = {}) => {
         { id: 'policies', title: 'Policy Editor', icon: PolicyIcon, permission: 'view_policies' },
         { id: 'charts', title: 'Charts & Analytics', icon: ChartsIcon, permission: 'view_charts' },
         { id: 'projects', title: 'Projects', icon: ProjectIcon, permission: 'view_projects' },
-        { id: 'tasks', title: 'Tasks', icon: TaskIcon, permission: 'view_tasks' },
+        {
+            id: 'tasks',
+            title: 'Tasks',
+            icon: TaskIcon,
+            permission: 'view_tasks',
+            children: [
+                { id: 'task_list', title: 'List', permission: 'view_task_list' },
+                { id: 'task_kanban', title: 'Kanban', permission: 'view_task_kanban' }
+            ]
+        },
         { id: 'reports', title: 'Reports', icon: ReportsIcon, permission: 'view_reports' },
         { id: 'audit', title: 'Audit Logs', icon: AuditIcon, permission: 'view_audit' },
         { id: 'notifications', title: 'Notifications', icon: NotificationsIcon, permission: 'view_notifications' },
@@ -144,9 +188,7 @@ export const getAdminMenuItems = (permissions = {}) => {
         );
     }
 
-    return allItems.filter(item =>
-        item.permission === null || permissions[item.permission] === true
-    );
+    return filterMenuItems(allItems, permissions);
 };
 
 // Manager sidebar menu items
@@ -159,7 +201,16 @@ export const getManagerMenuItems = (permissions = {}) => {
         { id: 'policies', title: 'Policy Editor', icon: PolicyIcon, permission: 'view_policies' },
         { id: 'charts', title: 'Charts & Analytics', icon: ChartsIcon, permission: 'view_charts' },
         { id: 'projects', title: 'Projects', icon: ProjectIcon, permission: 'view_projects' },
-        { id: 'tasks', title: 'Tasks', icon: TaskIcon, permission: 'view_tasks' },
+        {
+            id: 'tasks',
+            title: 'Tasks',
+            icon: TaskIcon,
+            permission: 'view_tasks',
+            children: [
+                { id: 'task_list', title: 'List', permission: 'view_task_list' },
+                { id: 'task_kanban', title: 'Kanban', permission: 'view_task_kanban' }
+            ]
+        },
         { id: 'reports', title: 'Reports', icon: ReportsIcon, permission: 'view_reports' },
         { id: 'audit', title: 'Audit Logs', icon: AuditIcon, permission: 'view_audit' },
         { id: 'notifications', title: 'Notifications', icon: NotificationsIcon, permission: 'view_notifications' },
@@ -174,9 +225,7 @@ export const getManagerMenuItems = (permissions = {}) => {
         );
     }
 
-    return allItems.filter(item =>
-        item.permission === null || permissions[item.permission] === true
-    );
+    return filterMenuItems(allItems, permissions);
 };
 
 // User sidebar menu items
@@ -189,7 +238,16 @@ export const getUserMenuItems = (permissions = {}) => {
         { id: 'policies', title: 'Policy Editor', icon: PolicyIcon, permission: 'view_policies' },
         { id: 'charts', title: 'Charts & Analytics', icon: ChartsIcon, permission: 'view_charts' },
         { id: 'projects', title: 'Projects', icon: ProjectIcon, permission: 'view_projects' },
-        { id: 'tasks', title: 'Tasks', icon: TaskIcon, permission: 'view_tasks' },
+        {
+            id: 'tasks',
+            title: 'Tasks',
+            icon: TaskIcon,
+            permission: 'view_tasks',
+            children: [
+                { id: 'task_list', title: 'List', permission: 'view_task_list' },
+                { id: 'task_kanban', title: 'Kanban', permission: 'view_task_kanban' }
+            ]
+        },
         { id: 'reports', title: 'Reports', icon: ReportsIcon, permission: 'view_reports' },
         { id: 'audit', title: 'Audit Logs', icon: AuditIcon, permission: 'view_audit' },
         { id: 'notifications', title: 'Notifications', icon: NotificationsIcon, permission: 'view_notifications' },
@@ -204,8 +262,6 @@ export const getUserMenuItems = (permissions = {}) => {
         );
     }
 
-    return allItems.filter(item =>
-        item.permission === null || permissions[item.permission] === true
-    );
+    return filterMenuItems(allItems, permissions);
 };
 
