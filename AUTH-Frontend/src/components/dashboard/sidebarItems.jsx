@@ -1,6 +1,32 @@
 // src/components/dashboard/sidebarItems.jsx
 import React from 'react';
 
+/**
+ * ===================================================================================
+ * 🛠️ DEVELOPER GUIDE: SIDEBAR CONFIGURATION
+ * ===================================================================================
+ * 
+ * This file defines the menu items for each dashboard type (SuperAdmin, Admin, Manager, User).
+ * 
+ * ➕ HOW TO ADD A NEW MENU ITEM:
+ * 1. Define an Icon component (see examples below).
+ * 2. Add an entry to the `allItems` array in the relevant function (e.g., `getAdminMenuItems`).
+ * 
+ * 📝 ITEM STRUCTURE:
+ * {
+ *    id: 'unique_id',           // Used for routing/active state (e.g., 'products')
+ *    title: 'Display Name',     // Text shown in sidebar
+ *    icon: YourIconComponent,   // Icon component
+ *    permission: 'view_key'     // [IMPORTANT] Permission key needed to see this item
+ *    children: []               // Optional: Array of sub-items
+ * }
+ * 
+ * 🔑 PERMISSIONS:
+ * The `permission` key MUST match a key in `permissionMapper.js` (e.g., 'view_users').
+ * If the user lacks this permission, the item will be automatically hidden.
+ * ===================================================================================
+ */
+
 // Icons for sidebar items
 export const DashboardIcon = ({ className = "w-5 h-5" }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">

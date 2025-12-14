@@ -14,9 +14,10 @@
 // - If found, it decodes the token to restore the user's session (so you stay logged in on refresh).
 // - It exposes this state via `useAuth()` hook so any component (Navbar, Dashboard) can access it.
 
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
+import { mapBackendPermissionsToFrontend } from '../utils/permissionMapper';
 
 // Create the context object
 const AuthContext = createContext();
@@ -33,10 +34,25 @@ export const useAuth = () => {
 // ==============================================================================
 // AUTH PROVIDER COMPONENT
 // ==============================================================================
+/**
+ * 🛠️ DEVELOPER GUIDE: AUTHENTICATION STATE
+ * 
+ * This component wraps the entire app and provides the `useAuth()` hook.
+ * 
+ * 📦 STATE MANAGED:
+ * 1. `token`: The JWT string (persisted in localStorage as 'authToken').
+ * 2. `user`: User details (ID, Email, Roles) decoded from the token.
+ * 3. `permissions`: Object defining what the user can do (fetched from backend).
+ * 
+ * 🔄 KEY FLOWS:
+ * - `login(email, password)`: Calls API, saves token, fetches permissions.
+ * - `fetchPermissions(token)`: Loads permissions from backend. Called on login and window focus.
+ * - `logout()`: Clears all state and storage.
+ */
 export const AuthProvider = ({ children }) => {
     // --- STATE INITIALIZATION ---
     // We initialise state from localStorage so data persists on page reload.
-    
+
     // Authorization Token (JWT)
     const [token, setToken] = useState(() => {
         const storedToken = localStorage.getItem('authToken');
@@ -53,7 +69,10 @@ export const AuthProvider = ({ children }) => {
     });
 
     const [loading, setLoading] = useState(true); // Prevents flickering while checking auth state on load
-    
+
+    // User Permissions (fetched from backend)
+    const [permissions, setPermissions] = useState(null);
+
     // API CONFIG: Looks for VITE_API_URL or defaults to localhost
     const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -72,7 +91,7 @@ export const AuthProvider = ({ children }) => {
                 // If we found a token in the URL, that means Google Login just happened.
                 try {
                     const decodedToken = jwtDecode(urlToken);
-                    
+
                     // Normalise Roles: Different identity providers format roles differently.
                     // We check multiple keys to be safe.
                     const roles = decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']
@@ -100,28 +119,82 @@ export const AuthProvider = ({ children }) => {
                 } catch (err) {
                     console.error('Error processing Google login token:', err);
                 }
-            } 
+            }
             else if (token) {
-                 // 2. CHECK FOR EXISTING LOCAL TOKEN
-                 // If we already had a token in state/storage, we assume it's valid for now.
-                 // In a real production app, you might ping an endpoint like /api/auth/me here to verify validity.
+                // 2. CHECK FOR EXISTING LOCAL TOKEN
+                // If we already had a token in state/storage, we assume it's valid for now.
+                // In a real production app, you might ping an endpoint like /api/auth/me here to verify validity.
             } else {
                 // No token found anywhere -> Not logged in.
                 localStorage.removeItem('userRoles');
                 setUser(null);
             }
-            
+
             setLoading(false); // App is ready to render
         };
         initAuth();
     }, [token]);
+
+    // --- FETCH PERMISSIONS FUNCTION ---
+    // Fetches user permissions from backend after login
+    const fetchPermissions = useCallback(async (authToken) => {
+        if (!authToken) {
+            console.log('🔒 No auth token, clearing permissions');
+            setPermissions(null);
+            return;
+        }
+
+        try {
+            console.log('📡 Fetching permissions from backend...');
+            const response = await fetch(`${apiBase}/api/user/my-permissions`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                },
+            });
+
+            if (response.ok) {
+                const backendPermissions = await response.json();
+                console.log('📥 Backend permissions received:', backendPermissions);
+
+                // Convert backend permission strings to frontend structure
+                const frontendPermissions = mapBackendPermissionsToFrontend(backendPermissions);
+                console.log('✅ Frontend permissions mapped:', frontendPermissions);
+
+                setPermissions(frontendPermissions);
+            } else {
+                console.error('❌ Failed to fetch permissions:', response.status, response.statusText);
+                setPermissions(null);
+            }
+        } catch (error) {
+            console.error('❌ Error fetching permissions:', error);
+            setPermissions(null);
+        }
+    }, [apiBase]);
+
+    // Fetch permissions whenever token or user changes, AND on window focus
+    useEffect(() => {
+        if (token && user) {
+            console.log('🔄 Token/User changed, fetching permissions...');
+            fetchPermissions(token);
+        }
+
+        const handleFocus = () => {
+            if (token) {
+                console.log('👀 Window focused, refreshing permissions...');
+                fetchPermissions(token);
+            }
+        };
+
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
+    }, [token, user, fetchPermissions]);
 
     // --- LOGIN FUNCTION ---
     // Called by LoginForm.jsx
     const login = async (email, password) => {
         try {
             console.log('Attempting login for:', email);
-            
+
             // 1. Call Backend API
             const response = await fetch(`${apiBase}/api/UserAuth/Login`, {
                 method: 'POST',
@@ -149,7 +222,10 @@ export const AuthProvider = ({ children }) => {
                 // Update State
                 setToken(data.token);
                 setUser({ id: userId, email: userEmail, name: userName, roles: data.roles, picture: userPicture });
-                
+
+                // Fetch permissions from backend
+                await fetchPermissions(data.token);
+
                 return { success: true };
             } else {
                 // 3. Handle Failure
@@ -169,15 +245,18 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('userRoles');
         setToken(null);
         setUser(null);
+        setPermissions(null); // Clear permissions on logout
     };
 
     const value = {
         token,      // Current JWT
         user,       // Current User Info
+        permissions, // User Permissions (from backend)
         loading,    // Is App Initialising?
         login,      // Login Method
         logout,     // Logout Method
-        apiBase     // API URL helper
+        apiBase,    // API URL helper
+        fetchPermissions // Expose for manual refresh if needed
     };
 
     // Prevent rendering children until we've checked for a token

@@ -5,7 +5,7 @@ const AdminChartsView = ({ totalUsers }) => {
     return (
         <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900">Statistics & Charts</h2>
-            
+
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white rounded-lg shadow p-6">
@@ -32,7 +32,7 @@ const AdminChartsView = ({ totalUsers }) => {
                             <span className="text-sm font-medium">{totalUsers}</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-6">
-                            <div 
+                            <div
                                 className="bg-blue-600 h-6 rounded-full flex items-center justify-center text-white text-xs font-medium"
                                 style={{ width: totalUsers > 0 ? '100%' : '0%' }}
                             >

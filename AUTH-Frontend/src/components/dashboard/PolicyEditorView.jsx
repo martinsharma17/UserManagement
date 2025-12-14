@@ -1,5 +1,6 @@
 // src/components/dashboard/PolicyEditorView.jsx
 import React, { useState, useEffect } from 'react';
+import { mapBackendPermissionsToFrontend, mapFrontendPermissionsToBackend } from '../../utils/permissionMapper';
 
 /**
  * PolicyEditorView Component
@@ -7,9 +8,30 @@ import React, { useState, useEffect } from 'react';
  * Refactored to a master-detail split view to eliminate excessive scrolling.
  * Left Sidebar: Select Role.
  * Main Panel: Configure Permissions for selected Role.
+ * 
+ * Now integrated with backend API for real-time permission updates.
  */
-const PolicyEditorView = ({ roles }) => {
-    // Available Resources with Hierarchy
+const PolicyEditorView = ({ roles, onPermissionsUpdated }) => {
+    /**
+     * ===================================================================================
+     * 🛠️ DEVELOPER GUIDE: POLICY EDITOR RESOURCES
+     * ===================================================================================
+     * 
+     * This list defines the rows in the Policy Editor table.
+     * 
+     * ➕ HOW TO ADD A NEW RESOURCE ROW:
+     * 1. Add a new object to the `resources` array below.
+     *    { id: 'new_id', name: 'Display Name' }
+     * 
+     * 🔗 CONNECTING TO PERMISSIONS:
+     * The `id` here (e.g., 'users') must match the key in `permissionMapper.js`.
+     * The mapper handles converting `users.create` -> `Permissions.Users.Create`.
+     * 
+     * 🌳 PARENT-CHILD RELATIONSHIPS:
+     * To make a row indented (child), add `parent: 'parent_id'`.
+     * Example: { id: 'task_list', name: 'List', parent: 'tasks' }
+     * ===================================================================================
+     */
     const resources = [
         { id: 'users', name: 'Users & Admins' },
         { id: 'roles', name: 'Roles & Permissions' },
@@ -47,22 +69,91 @@ const PolicyEditorView = ({ roles }) => {
         return rName !== 'SuperAdmin';
     });
 
-    // Load policies on mount
+    // Load policies from backend on mount
     useEffect(() => {
-        const storedPolicies = localStorage.getItem('system_policies');
-        if (storedPolicies) {
-            setPolicies(JSON.parse(storedPolicies));
-        } else {
-            initializeDefaultPolicies();
-        }
-        setLoading(false);
+        const fetchPoliciesFromBackend = async () => {
+            setLoading(true);
+            const policiesData = {};
+            const apiBase = 'http://localhost:3001';
+            const token = localStorage.getItem('authToken');
 
-        // Set initial active role
-        if (editableRoles.length > 0 && !activeRole) {
-            const firstRoleName = editableRoles[0].Name || editableRoles[0].name || editableRoles[0];
-            setActiveRole(firstRoleName);
+            try {
+                // Fetch permissions for each role from backend
+                for (const role of editableRoles) {
+                    const roleName = role.Name || role.name || role;
+
+                    const response = await fetch(`${apiBase}/api/policies/${roleName}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        // data.permissions is an array of backend permission strings
+                        const backendPermissions = data.permissions || [];
+
+                        // Convert to frontend format
+                        const frontendPermissions = mapBackendPermissionsToFrontend(backendPermissions);
+
+                        // Convert to policy editor format (resource-based)
+                        policiesData[roleName] = convertToResourceFormat(frontendPermissions);
+                    } else {
+                        console.error(`Failed to fetch permissions for ${roleName}`);
+                        // Initialize with empty permissions
+                        policiesData[roleName] = {};
+                        resources.forEach(res => {
+                            policiesData[roleName][res.id] = {
+                                create: false,
+                                read: false,
+                                update: false,
+                                delete: false,
+                                sidebar: false
+                            };
+                        });
+                    }
+                }
+
+                setPolicies(policiesData);
+            } catch (error) {
+                console.error('Error fetching policies:', error);
+                initializeDefaultPolicies();
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (editableRoles.length > 0) {
+            fetchPoliciesFromBackend();
+
+            // Set initial active role
+            if (!activeRole) {
+                const firstRoleName = editableRoles[0].Name || editableRoles[0].name || editableRoles[0];
+                setActiveRole(firstRoleName);
+            }
         }
     }, [roles]);
+
+    // Helper: Convert frontend permissions to resource-based format
+    const convertToResourceFormat = (frontendPermissions) => {
+        const resourceFormat = {};
+
+        resources.forEach(res => {
+            // Check both nested object format (users.create) and flat format (create_users)
+            const nestedPerms = frontendPermissions[res.id] || {};
+
+            resourceFormat[res.id] = {
+                create: nestedPerms.create || frontendPermissions[`create_${res.id}`] || false,
+                read: nestedPerms.read || frontendPermissions[`read_${res.id}`] || frontendPermissions[`view_${res.id}`] || false,
+                update: nestedPerms.update || frontendPermissions[`update_${res.id}`] || false,
+                delete: nestedPerms.delete || frontendPermissions[`delete_${res.id}`] || false,
+                sidebar: nestedPerms.sidebar || frontendPermissions[`sidebar_${res.id}`] || frontendPermissions[`view_${res.id}`] || false
+            };
+        });
+
+        return resourceFormat;
+    };
 
     const initializeDefaultPolicies = () => {
         const defaults = {};
@@ -125,10 +216,82 @@ const PolicyEditorView = ({ roles }) => {
         });
     };
 
-    const handleSave = () => {
-        localStorage.setItem('system_policies', JSON.stringify(policies));
-        setSaveMessage("Policies saved successfully! Updates will apply immediately.");
-        setTimeout(() => setSaveMessage(""), 3000);
+    const handleSave = async () => {
+        setSaveMessage("Saving...");
+        const apiBase = 'http://localhost:3001';
+        const token = localStorage.getItem('authToken');
+        let successCount = 0;
+        let errorCount = 0;
+
+        try {
+            // Save each role's permissions to backend
+            for (const roleName of Object.keys(policies)) {
+                const rolePolicy = policies[roleName];
+
+                // Convert resource-based format to backend permission array
+                const backendPermissions = convertResourceFormatToBackend(rolePolicy);
+
+                console.log(`📤 Sending permissions for ${roleName}:`, backendPermissions);
+                console.log(`   Total permissions: ${backendPermissions.length}`);
+
+                const response = await fetch(`${apiBase}/api/policies/${roleName}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(backendPermissions)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log(`✅ ${roleName}: ${result.message || 'Success'}`);
+                    successCount++;
+                } else {
+                    errorCount++;
+                    const errorText = await response.text();
+                    console.error(`❌ Failed to save permissions for ${roleName}:`, response.status, errorText);
+                }
+            }
+
+            if (errorCount === 0) {
+                setSaveMessage(`✓ Policies saved successfully! ${successCount} role(s) updated. Changes will apply on next page refresh.`);
+
+                // Trigger permission refresh callback if provided
+                if (onPermissionsUpdated) {
+                    onPermissionsUpdated();
+                }
+            } else {
+                setSaveMessage(`⚠ Partially saved: ${successCount} succeeded, ${errorCount} failed. Check console for details.`);
+            }
+        } catch (error) {
+            console.error('Error saving policies:', error);
+            setSaveMessage("❌ Error saving policies. Please try again.");
+        }
+
+        setTimeout(() => setSaveMessage(""), 5000);
+    };
+
+    // Helper: Convert resource-based format to backend permission array
+    const convertResourceFormatToBackend = (resourcePolicy) => {
+        const frontendPermissions = {};
+
+        // Convert resource format to nested frontend format that mapper expects
+        Object.keys(resourcePolicy).forEach(resourceId => {
+            const perms = resourcePolicy[resourceId];
+
+            // Create nested object for each resource
+            frontendPermissions[resourceId] = {
+                create: perms.create || false,
+                read: perms.read || false,
+                update: perms.update || false,
+                delete: perms.delete || false,
+                sidebar: perms.sidebar || false
+            };
+        });
+
+        // Use mapper to convert to backend format
+        return mapFrontendPermissionsToBackend(frontendPermissions);
     };
 
     if (loading) return <div className="p-8 text-center text-gray-500">Loading Configuration...</div>;

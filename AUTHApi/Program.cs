@@ -7,6 +7,9 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using AUTHApi.Core.Security;
+
 
 
 internal class Program
@@ -135,6 +138,13 @@ internal class Program
                 policy.RequireRole("Admin", "User"));
         });
 
+        // --- Custom Permission-Based Authorization ---
+        // Register our dynamic policy provider and handler
+        builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+        builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+
+
+
         var app = builder.Build();
 
         // ==========================================
@@ -150,6 +160,9 @@ internal class Program
                 // Seed Roles (Admin, User, Manager) and the SuperAdmin user if they don't exist.
                 await RoleSeeder.SeedRolesAsync(services);
                 await RoleSeeder.SeedSuperAdminAsync(services);
+                
+                // Seed default permissions for each role
+                await PermissionSeeder.SeedDefaultPermissionsAsync(services);
             }
             catch (Exception ex)
             {

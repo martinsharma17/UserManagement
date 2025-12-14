@@ -11,191 +11,27 @@ import TaskListView from '../components/dashboard/tasks/TaskListView.jsx';
 import TaskKanbanView from '../components/dashboard/tasks/TaskKanbanView.jsx';
 
 const UserDashboard = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, permissions: contextPermissions } = useAuth();
     const navigate = useNavigate();
 
     // State for sidebar and active view
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [activeView, setActiveView] = useState('dashboard');
-    const [permissions, setPermissions] = useState({});
 
-    // Data state for views if permissions allow
-    const [usersList, setUsersList] = useState([]);
+    // Use permissions from AuthContext (fetched from backend)
+    const permissions = contextPermissions || {};
 
-    // Fetch permissions (Dynamic from Policy System)
-    const fetchPermissions = useCallback(async () => {
-        const systemPoliciesJson = localStorage.getItem('system_policies');
-        let computedPermissions = {
-            view_users: false,
-            // defaults ...
-        };
-
-        if (systemPoliciesJson) {
-            const systemPolicies = JSON.parse(systemPoliciesJson);
-
-            // Get user roles
-            let userRoles = [];
-            if (user?.Role) userRoles = Array.isArray(user.Role) ? user.Role : [user.Role];
-            else if (user?.roles) userRoles = Array.isArray(user.roles) ? user.roles : [user.roles];
-            else if (user?.role) userRoles = Array.isArray(user.role) ? user.role : [user.role];
-            else userRoles = ['User'];
-
-            const normalizedUserRoles = userRoles.map(r => r.toLowerCase());
-            let hasPolicy = false;
-
-            let tempPerms = {
-                users: { create: false, read: false, update: false, delete: false, sidebar: false },
-                analytics: { create: false, read: false, update: false, delete: false, sidebar: false },
-                tasks: { create: false, read: false, update: false, delete: false, sidebar: false },
-                task_list: { create: false, read: false, update: false, delete: false, sidebar: false },
-                task_kanban: { create: false, read: false, update: false, delete: false, sidebar: false },
-                projects: { create: false, read: false, update: false, delete: false, sidebar: false },
-                reports: { read: false, sidebar: false },
-                audit: { read: false, sidebar: false },
-                roles: { read: false, sidebar: false },
-                policies: { read: false, sidebar: false },
-                settings: { read: false, sidebar: false },
-                notifications: { read: false, sidebar: false },
-                security: { read: false, sidebar: false },
-                backup: { read: false, sidebar: false }
-            };
-
-            Object.keys(systemPolicies).forEach(policyRoleName => {
-                if (normalizedUserRoles.includes(policyRoleName.toLowerCase())) {
-                    const policy = systemPolicies[policyRoleName];
-                    hasPolicy = true;
-
-                    // Helper to map generic permissions
-                    // Users
-                    if (policy.users?.read) tempPerms.users.read = true;
-                    if (policy.users?.sidebar) tempPerms.users.sidebar = true;
-
-                    // Analytics
-                    if (policy.analytics?.read) tempPerms.analytics.read = true;
-                    if (policy.analytics?.sidebar) tempPerms.analytics.sidebar = true;
-                    if (policy.charts?.read) tempPerms.analytics.read = true; // Fallback helper
-                    if (policy.charts?.sidebar) tempPerms.analytics.sidebar = true;
-
-                    // Tasks
-                    if (policy.tasks?.create) tempPerms.tasks.create = true;
-                    if (policy.tasks?.read) tempPerms.tasks.read = true;
-                    if (policy.tasks?.update) tempPerms.tasks.update = true;
-                    if (policy.tasks?.delete) tempPerms.tasks.delete = true;
-                    if (policy.tasks?.sidebar) tempPerms.tasks.sidebar = true;
-
-                    // Granular Task List
-                    if (policy.task_list?.create) tempPerms.task_list.create = true;
-                    if (policy.task_list?.read) tempPerms.task_list.read = true;
-                    if (policy.task_list?.update) tempPerms.task_list.update = true;
-                    if (policy.task_list?.delete) tempPerms.task_list.delete = true;
-                    if (policy.task_list?.sidebar) tempPerms.task_list.sidebar = true;
-
-                    // Granular Task Kanban
-                    if (policy.task_kanban?.create) tempPerms.task_kanban.create = true;
-                    if (policy.task_kanban?.read) tempPerms.task_kanban.read = true;
-                    if (policy.task_kanban?.update) tempPerms.task_kanban.update = true;
-                    if (policy.task_kanban?.delete) tempPerms.task_kanban.delete = true;
-                    if (policy.task_kanban?.sidebar) tempPerms.task_kanban.sidebar = true;
-
-                    // Projects
-                    if (policy.projects?.create) tempPerms.projects.create = true;
-                    if (policy.projects?.read) tempPerms.projects.read = true;
-                    if (policy.projects?.update) tempPerms.projects.update = true;
-                    if (policy.projects?.delete) tempPerms.projects.delete = true;
-                    if (policy.projects?.sidebar) tempPerms.projects.sidebar = true;
-
-                    // Others
-                    if (policy.reports?.read) tempPerms.reports.read = true;
-                    if (policy.reports?.sidebar) tempPerms.reports.sidebar = true;
-
-                    if (policy.audit?.read) tempPerms.audit.read = true;
-                    if (policy.audit?.sidebar) tempPerms.audit.sidebar = true;
-
-                    if (policy.roles?.read) tempPerms.roles.read = true;
-                    if (policy.roles?.sidebar) tempPerms.roles.sidebar = true;
-
-                    if (policy.policies?.read) tempPerms.policies.read = true;
-                    if (policy.policies?.sidebar) tempPerms.policies.sidebar = true;
-
-                    if (policy.settings?.read) tempPerms.settings.read = true;
-                    if (policy.settings?.sidebar) tempPerms.settings.sidebar = true;
-
-                    if (policy.notifications?.read) tempPerms.notifications.read = true;
-                    if (policy.notifications?.sidebar) tempPerms.notifications.sidebar = true;
-
-                    if (policy.security?.read) tempPerms.security.read = true;
-                    if (policy.security?.sidebar) tempPerms.security.sidebar = true;
-
-                    if (policy.backup?.read) tempPerms.backup.read = true;
-                    if (policy.backup?.sidebar) tempPerms.backup.sidebar = true;
-                }
-            });
-
-            if (hasPolicy) {
-                // VIEW_ = Sidebar Visibility
-                computedPermissions.view_users = tempPerms.users.sidebar;
-                computedPermissions.read_users = tempPerms.users.read;
-
-                computedPermissions.view_charts = tempPerms.analytics.sidebar;
-                computedPermissions.read_charts = tempPerms.analytics.read;
-
-                computedPermissions.view_tasks = tempPerms.tasks.sidebar;
-                computedPermissions.read_tasks = tempPerms.tasks.read;
-                computedPermissions.create_tasks = tempPerms.tasks.create;
-                computedPermissions.update_tasks = tempPerms.tasks.update;
-                computedPermissions.delete_tasks = tempPerms.tasks.delete;
-
-                // Granular Task List Permissions
-                computedPermissions.view_task_list = !!tempPerms.task_list?.sidebar;
-                computedPermissions.read_task_list = !!tempPerms.task_list?.read;
-                computedPermissions.create_task_list = !!tempPerms.task_list?.create;
-                computedPermissions.update_task_list = !!tempPerms.task_list?.update;
-                computedPermissions.delete_task_list = !!tempPerms.task_list?.delete;
-
-                // Granular Task Kanban Permissions
-                computedPermissions.view_task_kanban = !!tempPerms.task_kanban?.sidebar;
-                computedPermissions.read_task_kanban = !!tempPerms.task_kanban?.read;
-                computedPermissions.create_task_kanban = !!tempPerms.task_kanban?.create;
-                computedPermissions.update_task_kanban = !!tempPerms.task_kanban?.update;
-                computedPermissions.delete_task_kanban = !!tempPerms.task_kanban?.delete;
-
-                computedPermissions.view_projects = tempPerms.projects.sidebar;
-                computedPermissions.read_projects = tempPerms.projects.read;
-                computedPermissions.create_projects = tempPerms.projects.create;
-                computedPermissions.update_projects = tempPerms.projects.update;
-                computedPermissions.delete_projects = tempPerms.projects.delete;
-
-                computedPermissions.view_reports = tempPerms.reports.sidebar;
-                computedPermissions.read_reports = tempPerms.reports.read;
-
-                computedPermissions.view_audit = tempPerms.audit.sidebar;
-                computedPermissions.read_audit = tempPerms.audit.read;
-
-                computedPermissions.view_roles = tempPerms.roles.sidebar;
-                computedPermissions.read_roles = tempPerms.roles.read;
-
-                computedPermissions.view_policies = tempPerms.policies.sidebar;
-                computedPermissions.read_policies = tempPerms.policies.read;
-
-                computedPermissions.view_settings = tempPerms.settings.sidebar;
-                computedPermissions.read_settings = tempPerms.settings.read;
-
-                computedPermissions.view_notifications = tempPerms.notifications.sidebar;
-                computedPermissions.read_notifications = tempPerms.notifications.read;
-
-                computedPermissions.view_security = tempPerms.security.sidebar;
-                computedPermissions.read_security = tempPerms.security.read;
-
-                computedPermissions.view_backup = tempPerms.backup.sidebar;
-                computedPermissions.read_backup = tempPerms.backup.read;
-            }
-        }
-        setPermissions(computedPermissions);
-    }, [user]);
-
-    useEffect(() => {
-        fetchPermissions();
-    }, [fetchPermissions]);
+    // Show loading state while permissions are being fetched
+    if (!contextPermissions) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading permissions...</p>
+                </div>
+            </div>
+        );
+    }
 
     const menuItems = getUserMenuItems(permissions);
 
@@ -353,6 +189,7 @@ const UserDashboard = () => {
                     {renderActiveView()}
                 </div>
             </div>
+
         </div>
     );
 };

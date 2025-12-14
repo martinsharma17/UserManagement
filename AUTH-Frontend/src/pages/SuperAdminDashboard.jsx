@@ -382,6 +382,12 @@ const SuperAdminDashboard = () => {
                 return (
                     <PolicyEditorView
                         roles={roles}
+                        onPermissionsUpdated={() => {
+                            console.log('🔄 Policies updated! Users should refresh their pages to see changes.');
+                            console.log('💡 TIP: Press F5 to reload and fetch new permissions from backend');
+                            // Note: We can't force refresh other users' permissions without WebSockets
+                            // They need to refresh their page manually
+                        }}
                     />
                 );
             case 'settings':
