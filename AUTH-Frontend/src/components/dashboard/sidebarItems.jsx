@@ -118,6 +118,40 @@ export const getSuperAdminMenuItems = () => [
     { id: 'dashboard', title: 'Dashboard', icon: DashboardIcon, disabled: false },
     { id: 'users', title: 'Users & Admins', icon: UsersIcon, disabled: false },
     { id: 'charts', title: 'Charts & Analytics', icon: ChartsIcon, disabled: false },
+    {
+        id: 'projects',
+        title: 'Projects',
+        icon: ProjectIcon,
+        disabled: false,
+        children: [
+            {
+                id: 'my_projects',
+                title: 'My Projects',
+                disabled: false,
+                children: [
+                    {
+                        id: 'project_content',
+                        title: 'Project Content',
+                        disabled: false,
+                        children: [
+                            {
+                                id: 'project_team',
+                                title: 'Team & Workflow',
+                                disabled: false,
+                                children: [
+                                    {
+                                        id: 'project_settings',
+                                        title: 'Project Settings',
+                                        disabled: false
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
     { id: 'access', title: 'Access Management', icon: AccessIcon, disabled: false },
     { id: 'roles', title: 'Roles & Permissions', icon: RolesIcon, disabled: false },
     { id: 'policies', title: 'Policy Editor', icon: PolicyIcon, disabled: false },
@@ -187,7 +221,40 @@ export const getAdminMenuItems = (permissions = {}) => {
         { id: 'roles', title: 'Roles & Permissions', icon: RolesIcon, permission: 'view_roles' },
         { id: 'policies', title: 'Policy Editor', icon: PolicyIcon, permission: 'view_policies' },
         { id: 'charts', title: 'Charts & Analytics', icon: ChartsIcon, permission: 'view_charts' },
-        { id: 'projects', title: 'Projects', icon: ProjectIcon, permission: 'view_projects' },
+        {
+            id: 'projects',
+            title: 'Projects',
+            icon: ProjectIcon,
+            permission: 'view_projects',
+            children: [
+                {
+                    id: 'my_projects',
+                    title: 'My Projects',
+                    permission: 'view_my_projects',
+                    children: [
+                        {
+                            id: 'project_content',
+                            title: 'Project Content',
+                            permission: 'view_project_content',
+                            children: [
+                                {
+                                    id: 'project_team',
+                                    title: 'Team & Workflow',
+                                    permission: 'view_project_team',
+                                    children: [
+                                        {
+                                            id: 'project_settings',
+                                            title: 'Project Settings',
+                                            permission: 'view_project_settings'
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
         {
             id: 'tasks',
             title: 'Tasks',
@@ -226,7 +293,40 @@ export const getManagerMenuItems = (permissions = {}) => {
         { id: 'roles', title: 'Roles & Permissions', icon: RolesIcon, permission: 'view_roles' },
         { id: 'policies', title: 'Policy Editor', icon: PolicyIcon, permission: 'view_policies' },
         { id: 'charts', title: 'Charts & Analytics', icon: ChartsIcon, permission: 'view_charts' },
-        { id: 'projects', title: 'Projects', icon: ProjectIcon, permission: 'view_projects' },
+        {
+            id: 'projects',
+            title: 'Projects',
+            icon: ProjectIcon,
+            permission: 'view_projects',
+            children: [
+                {
+                    id: 'my_projects',
+                    title: 'My Projects',
+                    permission: 'view_my_projects',
+                    children: [
+                        {
+                            id: 'project_content',
+                            title: 'Project Content',
+                            permission: 'view_project_content',
+                            children: [
+                                {
+                                    id: 'project_team',
+                                    title: 'Team & Workflow',
+                                    permission: 'view_project_team',
+                                    children: [
+                                        {
+                                            id: 'project_settings',
+                                            title: 'Project Settings',
+                                            permission: 'view_project_settings'
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
         {
             id: 'tasks',
             title: 'Tasks',
@@ -263,7 +363,40 @@ export const getUserMenuItems = (permissions = {}) => {
         { id: 'roles', title: 'Roles & Permissions', icon: RolesIcon, permission: 'view_roles' },
         { id: 'policies', title: 'Policy Editor', icon: PolicyIcon, permission: 'view_policies' },
         { id: 'charts', title: 'Charts & Analytics', icon: ChartsIcon, permission: 'view_charts' },
-        { id: 'projects', title: 'Projects', icon: ProjectIcon, permission: 'view_projects' },
+        {
+            id: 'projects',
+            title: 'Projects',
+            icon: ProjectIcon,
+            permission: 'view_projects',
+            children: [
+                {
+                    id: 'my_projects',
+                    title: 'My Projects',
+                    permission: 'view_my_projects',
+                    children: [
+                        {
+                            id: 'project_content',
+                            title: 'Project Content',
+                            permission: 'view_project_content',
+                            children: [
+                                {
+                                    id: 'project_team',
+                                    title: 'Team & Workflow',
+                                    permission: 'view_project_team',
+                                    children: [
+                                        {
+                                            id: 'project_settings',
+                                            title: 'Project Settings',
+                                            permission: 'view_project_settings'
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
         {
             id: 'tasks',
             title: 'Tasks',

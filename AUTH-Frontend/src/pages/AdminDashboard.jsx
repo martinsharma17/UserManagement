@@ -221,6 +221,48 @@ const AdminDashboard = () => {
                         canDelete={authPermissions?.delete_projects}
                     />
                 );
+
+            // [NEW] Nested Project Views
+            case 'my_projects':
+                if (!authPermissions?.view_my_projects) return <div className="p-8 text-center text-red-500">Access Denied</div>;
+                return (
+                    <AdminResourceView
+                        resourceName="My Projects"
+                        canCreate={authPermissions?.create_my_projects}
+                        canUpdate={authPermissions?.update_my_projects}
+                        canDelete={authPermissions?.delete_my_projects}
+                    />
+                );
+            case 'project_content':
+                if (!authPermissions?.view_project_content) return <div className="p-8 text-center text-red-500">Access Denied</div>;
+                return (
+                    <AdminResourceView
+                        resourceName="Project Content"
+                        canCreate={authPermissions?.create_project_content}
+                        canUpdate={authPermissions?.update_project_content}
+                        canDelete={authPermissions?.delete_project_content}
+                    />
+                );
+            case 'project_team':
+                if (!authPermissions?.view_project_team) return <div className="p-8 text-center text-red-500">Access Denied</div>;
+                return (
+                    <AdminResourceView
+                        resourceName="Team & Workflow"
+                        canCreate={authPermissions?.create_project_team}
+                        canUpdate={authPermissions?.update_project_team}
+                        canDelete={authPermissions?.delete_project_team}
+                    />
+                );
+            case 'project_settings':
+                if (!authPermissions?.view_project_settings) return <div className="p-8 text-center text-red-500">Access Denied</div>;
+                return (
+                    <AdminResourceView
+                        resourceName="Project Settings"
+                        canCreate={authPermissions?.create_project_settings}
+                        canUpdate={authPermissions?.update_project_settings}
+                        canDelete={authPermissions?.delete_project_settings}
+                    />
+                );
             case 'charts':
                 if (!authPermissions?.view_charts) {
                     return (

@@ -11,8 +11,8 @@
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
-import LoginForm from './components/LoginForm.jsx';
-import RegisterForm from './components/RegisterForm.jsx';
+import LoginForm from './components/auth/LoginForm.jsx';
+import RegisterForm from './components/auth/RegisterForm.jsx';
 import Dashboard from './components/Dashboard.jsx';
 
 // Role-based dashboards
@@ -22,8 +22,8 @@ import ManagerDashboard from "./pages/ManagerDashboard.jsx";
 import UserDashboard from "./pages/UserDashboard.jsx";
 
 import { jwtDecode } from "jwt-decode";
-import Navbar from './components/Navbar.jsx';
-import ErrorBoundary from './components/ErrorBoundary.jsx';
+import Navbar from './components/layout/Navbar.jsx';
+import ErrorBoundary from './components/common/ErrorBoundary.jsx';
 
 const API_BASE_URL = "http://localhost:3001/api/";
 

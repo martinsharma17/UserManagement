@@ -1,5 +1,6 @@
 ﻿using AUTHApi.Data;
-using AUTHApi.Models;
+using AUTHApi.DTOs;
+using AUTHApi.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

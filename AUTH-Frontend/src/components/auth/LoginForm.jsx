@@ -101,7 +101,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import {
     EnvelopeIcon,
     LockClosedIcon,
@@ -300,8 +300,8 @@ const LoginForm = () => {
 
                         </button>
 
-                        
-{/* Google OAuth Button */}
+
+                        {/* Google OAuth Button */}
                         <button
                             type="button"
                             onClick={() => window.location.href = "http://localhost:3001/api/auth/google-login"}

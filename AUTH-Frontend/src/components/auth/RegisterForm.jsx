@@ -146,7 +146,7 @@
 // src/components/RegisterForm.jsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 // Inline SVG Icons
 const UserIcon = ({ className = "h-5 w-5" }) => (

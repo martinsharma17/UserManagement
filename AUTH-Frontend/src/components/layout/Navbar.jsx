@@ -41,7 +41,7 @@
 
 // src/components/Navbar.jsx
 import React, { useState, useRef, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useNavigate, Link } from 'react-router-dom';
 
 // Inline SVG Icons (same as before)
@@ -267,8 +267,8 @@ const Navbar = () => {
                                     console.log('Navbar - User object:', user);
                                     console.log('Navbar - User picture:', user?.picture);
                                     return user?.picture ? (
-                                        <img 
-                                            src={user.picture} 
+                                        <img
+                                            src={user.picture}
                                             alt={getDisplayName()}
                                             className="h-8 w-8 rounded-full object-cover shadow-md border-2 border-white"
                                             onError={(e) => {
@@ -299,8 +299,8 @@ const Navbar = () => {
                                     <div className="px-4 py-3 border-b border-gray-100">
                                         <div className="flex items-center space-x-3 mb-2">
                                             {user?.picture ? (
-                                                <img 
-                                                    src={user.picture} 
+                                                <img
+                                                    src={user.picture}
                                                     alt={getDisplayName()}
                                                     className="h-12 w-12 rounded-full object-cover border-2 border-gray-200"
                                                 />

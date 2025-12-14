@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using AUTHApi.Data;
+using AUTHApi.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -12,6 +13,10 @@ using AUTHApi.Core.Security;
 
 
 
+/// <summary>
+/// Entry point for the User Management API.
+/// Configures services, authentication, authorization, and the HTTP request pipeline.
+/// </summary>
 internal class Program
 {
     private static async Task Main(string[] args)

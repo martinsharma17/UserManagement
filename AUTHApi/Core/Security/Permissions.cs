@@ -33,6 +33,30 @@ namespace AUTHApi.Core.Security
             public const string Create = "Permissions.Projects.Create";
             public const string Edit = "Permissions.Projects.Edit";
             public const string Delete = "Permissions.Projects.Delete";
+
+            // Level 2: My Projects
+            public const string ViewMyProjects = "Permissions.Projects.MyProjects.View";
+            public const string CreateMyProjects = "Permissions.Projects.MyProjects.Create";
+            public const string EditMyProjects = "Permissions.Projects.MyProjects.Edit";
+            public const string DeleteMyProjects = "Permissions.Projects.MyProjects.Delete";
+
+            // Level 3: Project Content
+            public const string ViewContent = "Permissions.Projects.Content.View";
+            public const string CreateContent = "Permissions.Projects.Content.Create";
+            public const string EditContent = "Permissions.Projects.Content.Edit";
+            public const string DeleteContent = "Permissions.Projects.Content.Delete";
+
+            // Level 4: Team & Workflow
+            public const string ViewTeam = "Permissions.Projects.Team.View";
+            public const string CreateTeam = "Permissions.Projects.Team.Create";
+            public const string EditTeam = "Permissions.Projects.Team.Edit";
+            public const string DeleteTeam = "Permissions.Projects.Team.Delete";
+
+            // Level 5: Project Settings
+            public const string ViewSettings = "Permissions.Projects.Settings.View";
+            public const string CreateSettings = "Permissions.Projects.Settings.Create";
+            public const string EditSettings = "Permissions.Projects.Settings.Edit";
+            public const string DeleteSettings = "Permissions.Projects.Settings.Delete";
         }
         
         public static class Analytics
@@ -50,6 +74,10 @@ namespace AUTHApi.Core.Security
                 Tasks.ViewList, Tasks.CreateList, Tasks.EditList, Tasks.DeleteList,
                 Tasks.ViewKanban, Tasks.CreateKanban, Tasks.EditKanban, Tasks.DeleteKanban,
                 Projects.View, Projects.Create, Projects.Edit, Projects.Delete,
+                Projects.ViewMyProjects, Projects.CreateMyProjects, Projects.EditMyProjects, Projects.DeleteMyProjects,
+                Projects.ViewContent, Projects.CreateContent, Projects.EditContent, Projects.DeleteContent,
+                Projects.ViewTeam, Projects.CreateTeam, Projects.EditTeam, Projects.DeleteTeam,
+                Projects.ViewSettings, Projects.CreateSettings, Projects.EditSettings, Projects.DeleteSettings,
                 Analytics.View
             };
         }

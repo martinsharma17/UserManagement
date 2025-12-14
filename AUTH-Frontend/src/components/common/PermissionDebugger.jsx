@@ -2,7 +2,7 @@
 // Add this component to any dashboard to see what permissions are loaded
 
 import React from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const PermissionDebugger = () => {
     const { permissions, user } = useAuth();

@@ -39,70 +39,20 @@ const Sidebar = ({
             </div>
 
             {/* Sidebar Navigation */}
-            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-                {menuItems.map((item) => {
-                    const Icon = item.icon;
-                    // Check if parent or any child is active
-                    const isParentActive = activeView === item.id || (item.children && item.children.some(child => child.id === activeView));
-                    const hasChildren = item.children && item.children.length > 0;
-                    const isExpanded = expandedMenus[item.id];
-
-                    return (
-                        <div key={item.id}>
-                            <button
-                                onClick={() => {
-                                    if (hasChildren) {
-                                        toggleMenu(item.id);
-                                        if (!sidebarOpen) setSidebarOpen(true); // Open sidebar if closed
-                                    } else {
-                                        setActiveView(item.id);
-                                    }
-                                }}
-                                disabled={item.disabled}
-                                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${isParentActive && !hasChildren
-                                        ? "bg-blue-600 text-white"
-                                        : item.disabled
-                                            ? "text-gray-500 cursor-not-allowed"
-                                            : "text-gray-300 hover:bg-gray-800"
-                                    }`}
-                                title={item.title}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <Icon className="w-5 h-5 flex-shrink-0" />
-                                    {sidebarOpen && <span>{item.title}</span>}
-                                </div>
-                                {hasChildren && sidebarOpen && (
-                                    <svg
-                                        className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                )}
-                            </button>
-
-                            {/* Render Children */}
-                            {hasChildren && sidebarOpen && isExpanded && (
-                                <div className="ml-8 mt-1 space-y-1">
-                                    {item.children.map((child) => (
-                                        <button
-                                            key={child.id}
-                                            onClick={() => setActiveView(child.id)}
-                                            className={`w-full flex items-center gap-3 px-4 py-2 text-sm rounded-lg transition-colors ${activeView === child.id
-                                                    ? "text-blue-400 font-medium"
-                                                    : "text-gray-400 hover:text-white"
-                                                }`}
-                                        >
-                                            {child.title}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
+            <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+                {menuItems.map((item) => (
+                    <SidebarItem
+                        key={item.id}
+                        item={item}
+                        depth={0}
+                        activeView={activeView}
+                        setActiveView={setActiveView}
+                        sidebarOpen={sidebarOpen}
+                        setSidebarOpen={setSidebarOpen}
+                        expandedMenus={expandedMenus}
+                        toggleMenu={toggleMenu}
+                    />
+                ))}
             </nav>
 
             {/* Sidebar Footer */}
@@ -117,6 +67,94 @@ const Sidebar = ({
                     {sidebarOpen && <span>Logout</span>}
                 </button>
             </div>
+        </div>
+    );
+};
+
+// Recursive Sidebar Item Component
+const SidebarItem = ({
+    item,
+    depth,
+    activeView,
+    setActiveView,
+    sidebarOpen,
+    setSidebarOpen,
+    expandedMenus,
+    toggleMenu
+}) => {
+    const Icon = item.icon;
+    const hasChildren = item.children && item.children.length > 0;
+    const isExpanded = expandedMenus[item.id];
+
+    // Check if this item OR any of its descendants are active
+    const isActive = activeView === item.id;
+
+    // Calculate indentation based on depth
+    const paddingLeft = depth === 0 ? '1rem' : `${depth * 1.5 + 1}rem`;
+
+    return (
+        <div>
+            <button
+                onClick={() => {
+                    if (hasChildren) {
+                        toggleMenu(item.id);
+                        if (!sidebarOpen) setSidebarOpen(true);
+                    } else {
+                        setActiveView(item.id);
+                    }
+                }}
+                disabled={item.disabled}
+                className={`w-full flex items-center justify-between py-2 rounded-lg transition-colors ${isActive
+                        ? "bg-blue-600 text-white"
+                        : item.disabled
+                            ? "text-gray-500 cursor-not-allowed"
+                            : "text-gray-300 hover:bg-gray-800"
+                    }`}
+                style={{ paddingLeft, paddingRight: '1rem' }}
+                title={item.title}
+            >
+                <div className="flex items-center gap-3">
+                    {/* Only show icon for top-level items to keep it clean, or use dot for children */}
+                    {depth === 0 && Icon && <Icon className="w-5 h-5 flex-shrink-0" />}
+
+                    {/* If we strictly want icons for all, we can fallback to a dot */}
+                    {depth > 0 && (
+                        <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : 'bg-gray-500'}`}></div>
+                    )}
+
+                    {sidebarOpen && <span className="text-sm truncate">{item.title}</span>}
+                </div>
+
+                {hasChildren && sidebarOpen && (
+                    <svg
+                        className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                )}
+            </button>
+
+            {/* Recursive Children Rendering */}
+            {hasChildren && sidebarOpen && isExpanded && (
+                <div className="space-y-1">
+                    {item.children.map((child) => (
+                        <SidebarItem
+                            key={child.id}
+                            item={child}
+                            depth={depth + 1}
+                            activeView={activeView}
+                            setActiveView={setActiveView}
+                            sidebarOpen={sidebarOpen}
+                            setSidebarOpen={setSidebarOpen}
+                            expandedMenus={expandedMenus}
+                            toggleMenu={toggleMenu}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

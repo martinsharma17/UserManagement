@@ -1,4 +1,5 @@
 using AUTHApi.Data;
+using AUTHApi.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

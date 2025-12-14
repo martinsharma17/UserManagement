@@ -38,7 +38,14 @@ const PolicyEditorView = ({ roles, onPermissionsUpdated }) => {
         { id: 'policies', name: 'Policy Editor' },
         { id: 'charts', name: 'Charts & Analytics' },
         { id: 'settings', name: 'Settings' },
-        { id: 'projects', name: 'Projects' },
+
+        // Projects & Nested Resources
+        { id: 'projects', name: 'Projects (Root)' },
+        { id: 'my_projects', name: 'My Projects', parent: 'projects' },
+        { id: 'project_content', name: 'Project Content', parent: 'my_projects' },
+        { id: 'project_team', name: 'Team & Workflow', parent: 'project_content' },
+        { id: 'project_settings', name: 'Project Settings', parent: 'project_team' },
+
         { id: 'tasks', name: 'Tasks (Overview)' },
         { id: 'task_list', name: 'List', parent: 'tasks' }, // Child of tasks
         { id: 'task_kanban', name: 'Kanban', parent: 'tasks' }, // Child of tasks
@@ -391,26 +398,39 @@ const PolicyEditorView = ({ roles, onPermissionsUpdated }) => {
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
                                         {resources.map((resource, idx) => {
+                                            // Helper to calculate depth recursively
+                                            const getDepth = (id, currentDepth = 0) => {
+                                                const res = resources.find(r => r.id === id);
+                                                if (!res || !res.parent) return currentDepth;
+                                                return getDepth(res.parent, currentDepth + 1);
+                                            };
+
+                                            const depth = getDepth(resource.id);
                                             const rolePolicy = policies[activeRole] || {};
                                             const resPolicy = rolePolicy[resource.id] || {};
                                             const isAlt = idx % 2 === 0;
-                                            const isChild = !!resource.parent;
 
                                             return (
                                                 <tr key={resource.id} className={`group hover:bg-gray-50 transition-colors ${isAlt ? 'bg-white' : 'bg-[rgba(249,250,251,0.5)]'}`}>
                                                     <td className="py-4 px-6 relative">
-                                                        {isChild && (
-                                                            <div className="absolute left-10 top-0 bottom-0 w-px bg-gray-200 h-1/2 translate-y-full transform -translate-y-1/2"></div>
+                                                        {depth > 0 && (
+                                                            <div
+                                                                className="absolute top-0 bottom-0 w-px bg-gray-200 h-1/2 translate-y-full transform -translate-y-1/2"
+                                                                style={{ left: `${depth * 24 + 24}px` }}
+                                                            ></div>
                                                         )}
-                                                        <div className={`flex items-center gap-3 ${isChild ? 'pl-8' : ''}`}>
-                                                            {isChild && (
+                                                        <div
+                                                            className="flex items-center gap-3"
+                                                            style={{ paddingLeft: `${depth * 24}px` }}
+                                                        >
+                                                            {depth > 0 && (
                                                                 <span className="text-gray-300 -ml-4">└──</span>
                                                             )}
-                                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors ${isChild ? 'bg-gray-50 scale-90' : 'bg-gray-100'}`}>
+                                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors ${depth > 0 ? 'bg-gray-50 scale-90' : 'bg-gray-100'}`}>
                                                                 <span className="text-xs font-bold">{resource.name[0]}</span>
                                                             </div>
                                                             <div>
-                                                                <p className={`font-medium ${isChild ? 'text-gray-600' : 'text-gray-700'}`}>{resource.name}</p>
+                                                                <p className={`font-medium ${depth > 0 ? 'text-gray-600' : 'text-gray-700'}`}>{resource.name}</p>
                                                                 <p className="text-[10px] text-gray-400">id: {resource.id}</p>
                                                             </div>
                                                         </div>

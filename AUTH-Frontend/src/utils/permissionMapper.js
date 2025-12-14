@@ -54,6 +54,27 @@ export const PERMISSION_CONSTANTS = {
     PROJECTS_EDIT: 'Permissions.Projects.Edit',
     PROJECTS_DELETE: 'Permissions.Projects.Delete',
 
+    // Nested Levels
+    MY_PROJECTS_VIEW: 'Permissions.Projects.MyProjects.View',
+    MY_PROJECTS_CREATE: 'Permissions.Projects.MyProjects.Create',
+    MY_PROJECTS_EDIT: 'Permissions.Projects.MyProjects.Edit',
+    MY_PROJECTS_DELETE: 'Permissions.Projects.MyProjects.Delete',
+
+    PROJECT_CONTENT_VIEW: 'Permissions.Projects.Content.View',
+    PROJECT_CONTENT_CREATE: 'Permissions.Projects.Content.Create',
+    PROJECT_CONTENT_EDIT: 'Permissions.Projects.Content.Edit',
+    PROJECT_CONTENT_DELETE: 'Permissions.Projects.Content.Delete',
+
+    PROJECT_TEAM_VIEW: 'Permissions.Projects.Team.View',
+    PROJECT_TEAM_CREATE: 'Permissions.Projects.Team.Create',
+    PROJECT_TEAM_EDIT: 'Permissions.Projects.Team.Edit',
+    PROJECT_TEAM_DELETE: 'Permissions.Projects.Team.Delete',
+
+    PROJECT_SETTINGS_VIEW: 'Permissions.Projects.Settings.View',
+    PROJECT_SETTINGS_CREATE: 'Permissions.Projects.Settings.Create',
+    PROJECT_SETTINGS_EDIT: 'Permissions.Projects.Settings.Edit',
+    PROJECT_SETTINGS_DELETE: 'Permissions.Projects.Settings.Delete',
+
     // Analytics
     ANALYTICS_VIEW: 'Permissions.Analytics.View',
 };
@@ -119,6 +140,34 @@ export function mapBackendPermissionsToFrontend(backendPermissions) {
             delete: permSet.has(PERMISSION_CONSTANTS.PROJECTS_DELETE),
             sidebar: permSet.has(PERMISSION_CONSTANTS.PROJECTS_VIEW),
         },
+        my_projects: {
+            create: permSet.has(PERMISSION_CONSTANTS.MY_PROJECTS_CREATE),
+            read: permSet.has(PERMISSION_CONSTANTS.MY_PROJECTS_VIEW),
+            update: permSet.has(PERMISSION_CONSTANTS.MY_PROJECTS_EDIT),
+            delete: permSet.has(PERMISSION_CONSTANTS.MY_PROJECTS_DELETE),
+            sidebar: permSet.has(PERMISSION_CONSTANTS.MY_PROJECTS_VIEW),
+        },
+        project_content: {
+            create: permSet.has(PERMISSION_CONSTANTS.PROJECT_CONTENT_CREATE),
+            read: permSet.has(PERMISSION_CONSTANTS.PROJECT_CONTENT_VIEW),
+            update: permSet.has(PERMISSION_CONSTANTS.PROJECT_CONTENT_EDIT),
+            delete: permSet.has(PERMISSION_CONSTANTS.PROJECT_CONTENT_DELETE),
+            sidebar: permSet.has(PERMISSION_CONSTANTS.PROJECT_CONTENT_VIEW),
+        },
+        project_team: {
+            create: permSet.has(PERMISSION_CONSTANTS.PROJECT_TEAM_CREATE),
+            read: permSet.has(PERMISSION_CONSTANTS.PROJECT_TEAM_VIEW),
+            update: permSet.has(PERMISSION_CONSTANTS.PROJECT_TEAM_EDIT),
+            delete: permSet.has(PERMISSION_CONSTANTS.PROJECT_TEAM_DELETE),
+            sidebar: permSet.has(PERMISSION_CONSTANTS.PROJECT_TEAM_VIEW),
+        },
+        project_settings: {
+            create: permSet.has(PERMISSION_CONSTANTS.PROJECT_SETTINGS_CREATE),
+            read: permSet.has(PERMISSION_CONSTANTS.PROJECT_SETTINGS_VIEW),
+            update: permSet.has(PERMISSION_CONSTANTS.PROJECT_SETTINGS_EDIT),
+            delete: permSet.has(PERMISSION_CONSTANTS.PROJECT_SETTINGS_DELETE),
+            sidebar: permSet.has(PERMISSION_CONSTANTS.PROJECT_SETTINGS_VIEW),
+        },
 
         // Legacy/Placeholder permissions (for components that haven't been updated yet)
         reports: { read: false, sidebar: false },
@@ -155,7 +204,14 @@ export function mapBackendPermissionsToFrontend(backendPermissions) {
         view_users: permSet.has(PERMISSION_CONSTANTS.USERS_VIEW),
         view_charts: permSet.has(PERMISSION_CONSTANTS.ANALYTICS_VIEW),
         view_analytics: permSet.has(PERMISSION_CONSTANTS.ANALYTICS_VIEW),
+
+        // Projects Sidebar
         view_projects: permSet.has(PERMISSION_CONSTANTS.PROJECTS_VIEW),
+        view_my_projects: permSet.has(PERMISSION_CONSTANTS.MY_PROJECTS_VIEW),
+        view_project_content: permSet.has(PERMISSION_CONSTANTS.PROJECT_CONTENT_VIEW),
+        view_project_team: permSet.has(PERMISSION_CONSTANTS.PROJECT_TEAM_VIEW),
+        view_project_settings: permSet.has(PERMISSION_CONSTANTS.PROJECT_SETTINGS_VIEW),
+
         view_tasks: permSet.has(PERMISSION_CONSTANTS.TASKS_VIEW) ||
             permSet.has(PERMISSION_CONSTANTS.TASKS_LIST_VIEW) ||
             permSet.has(PERMISSION_CONSTANTS.TASKS_KANBAN_VIEW),
@@ -205,11 +261,35 @@ export function mapFrontendPermissionsToBackend(frontendPermissions) {
     if (frontendPermissions.task_kanban?.update) permissions.push(PERMISSION_CONSTANTS.TASKS_KANBAN_EDIT);
     if (frontendPermissions.task_kanban?.delete) permissions.push(PERMISSION_CONSTANTS.TASKS_KANBAN_DELETE);
 
-    // Projects
+    // Projects (Parent)
     if (frontendPermissions.projects?.create) permissions.push(PERMISSION_CONSTANTS.PROJECTS_CREATE);
     if (frontendPermissions.projects?.read) permissions.push(PERMISSION_CONSTANTS.PROJECTS_VIEW);
     if (frontendPermissions.projects?.update) permissions.push(PERMISSION_CONSTANTS.PROJECTS_EDIT);
     if (frontendPermissions.projects?.delete) permissions.push(PERMISSION_CONSTANTS.PROJECTS_DELETE);
+
+    // My Projects
+    if (frontendPermissions.my_projects?.create) permissions.push(PERMISSION_CONSTANTS.MY_PROJECTS_CREATE);
+    if (frontendPermissions.my_projects?.read) permissions.push(PERMISSION_CONSTANTS.MY_PROJECTS_VIEW);
+    if (frontendPermissions.my_projects?.update) permissions.push(PERMISSION_CONSTANTS.MY_PROJECTS_EDIT);
+    if (frontendPermissions.my_projects?.delete) permissions.push(PERMISSION_CONSTANTS.MY_PROJECTS_DELETE);
+
+    // Project Content
+    if (frontendPermissions.project_content?.create) permissions.push(PERMISSION_CONSTANTS.PROJECT_CONTENT_CREATE);
+    if (frontendPermissions.project_content?.read) permissions.push(PERMISSION_CONSTANTS.PROJECT_CONTENT_VIEW);
+    if (frontendPermissions.project_content?.update) permissions.push(PERMISSION_CONSTANTS.PROJECT_CONTENT_EDIT);
+    if (frontendPermissions.project_content?.delete) permissions.push(PERMISSION_CONSTANTS.PROJECT_CONTENT_DELETE);
+
+    // Project Team
+    if (frontendPermissions.project_team?.create) permissions.push(PERMISSION_CONSTANTS.PROJECT_TEAM_CREATE);
+    if (frontendPermissions.project_team?.read) permissions.push(PERMISSION_CONSTANTS.PROJECT_TEAM_VIEW);
+    if (frontendPermissions.project_team?.update) permissions.push(PERMISSION_CONSTANTS.PROJECT_TEAM_EDIT);
+    if (frontendPermissions.project_team?.delete) permissions.push(PERMISSION_CONSTANTS.PROJECT_TEAM_DELETE);
+
+    // Project Settings
+    if (frontendPermissions.project_settings?.create) permissions.push(PERMISSION_CONSTANTS.PROJECT_SETTINGS_CREATE);
+    if (frontendPermissions.project_settings?.read) permissions.push(PERMISSION_CONSTANTS.PROJECT_SETTINGS_VIEW);
+    if (frontendPermissions.project_settings?.update) permissions.push(PERMISSION_CONSTANTS.PROJECT_SETTINGS_EDIT);
+    if (frontendPermissions.project_settings?.delete) permissions.push(PERMISSION_CONSTANTS.PROJECT_SETTINGS_DELETE);
 
     // Analytics
     if (frontendPermissions.analytics?.read || frontendPermissions.charts?.read) {
