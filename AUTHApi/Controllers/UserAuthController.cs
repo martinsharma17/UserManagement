@@ -23,11 +23,11 @@ namespace AUTHApi.Controllers
         // DEPENDENCY INJECTION
         // ==========================================
         // These services are provided by ASP.NET Core Identity and Configuration system.
-        
+
         private readonly UserManager<ApplicationUser> _userManager;  // API for managing users (create, delete, find, etc.)
         private readonly SignInManager<ApplicationUser> _signinManager;  // API for handling sign-in/sign-out logic
         private readonly RoleManager<IdentityRole> _roleManager;  // API for managing roles
-        
+
         // JWT Configuration values read from appsettings.json
         private readonly string? _jwtKey;  // Secret key for signing tokens
         private readonly string? _JwtIssuer;  // Issuer of the token (this server)
@@ -43,7 +43,7 @@ namespace AUTHApi.Controllers
             _userManager = userManager;
             _signinManager = signInManager;
             _roleManager = roleManager;
-            
+
             // Read JWT settings from configuration
             _jwtKey = configuration["Jwt:Key"];
             _JwtIssuer = configuration["Jwt:Issuer"];
@@ -88,14 +88,14 @@ namespace AUTHApi.Controllers
             // 4. Save user to database using UserManager
             // This hashes the password automatically before saving
             var result = await _userManager.CreateAsync(user, registerModel.Password);
-            
+
             if (result.Succeeded)
             {
                 // 5. Default Role Assignment
                 // IMPORTANT: Every new user is automatically assigned the "User" role.
                 // This grants them basic access permission (see policies in Program.cs).
                 await _userManager.AddToRoleAsync(user, "User");
-                
+
                 return Ok(new { success = true, message = "User registered successfully" });
             }
             else
@@ -124,7 +124,7 @@ namespace AUTHApi.Controllers
             // 2. Verify password
             // false parameter indicates we don't want to lock out the account after failed attempts here
             var result = await _signinManager.CheckPasswordSignInAsync(user, loginModel.Password, false);
-            
+
             if (!result.Succeeded)
             {
                 return Unauthorized(new { success = false, message = "Invalid email or password" });
@@ -140,7 +140,7 @@ namespace AUTHApi.Controllers
                 // Only check IsActive for non-SuperAdmins
                 if (!user.IsActive)
                 {
-                     return Unauthorized(new { success = false, message = "Admin blocked you" });
+                    return Unauthorized(new { success = false, message = "Admin blocked you" });
                 }
             }
             else
@@ -156,7 +156,7 @@ namespace AUTHApi.Controllers
             // 4. Generate JWT Token
             // This token contains all the permissions (claims & roles) the user has.
             var token = await GenerateJWTToken(user);
-            
+
             // 5. Get Roles for frontend (so frontend knows what UI to show)
             var roles = await _userManager.GetRolesAsync(user);
 
@@ -184,7 +184,7 @@ namespace AUTHApi.Controllers
         public async Task<string> GenerateJWTToken(ApplicationUser user)
         {
             // --- Step 1: Gather Claims (User Data) ---
-            
+
             // Get user roles (e.g., "Admin", "User")
             // These are critical for [Authorize(Roles = "...")] checks
             var roles = await _userManager.GetRolesAsync(user);
@@ -216,12 +216,12 @@ namespace AUTHApi.Controllers
             }
 
             // --- Step 2: Sign the Token ---
-            
+
             // Create the security key from our secret string
             var key = new SymmetricSecurityKey(
                 System.Text.Encoding.UTF8.GetBytes(
                     _jwtKey ?? throw new InvalidOperationException("JWT Key is not configured")));
-            
+
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             // --- Step 3: Create the Token Object ---

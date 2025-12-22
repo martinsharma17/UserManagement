@@ -36,36 +36,22 @@ const ManagerDashboard = () => {
     // Use permissions from AuthContext (fetched from backend)
     const permissions = contextPermissions || {};
 
-    // Show loading state while permissions are being fetched
-    if (!contextPermissions) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading permissions...</p>
-                </div>
-            </div>
-        );
-    }
-
-    // Get menu items based on permissions
+    // Get menu items based on permissions (must be before early return)
     const menuItems = getManagerMenuItems(permissions);
 
-
+    // ⚠️ IMPORTANT: All hooks must be declared BEFORE any conditional returns
     const fetchUsers = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await fetch(`${apiBase}/api/Admin/users`, {
+            const response = await fetch(`${apiBase}/api/User/users`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
             if (response.ok) {
                 const data = await response.json();
-                // Filter out admins and superadmins if they appear in the list
-                const regularUsers = data.filter(user =>
-                    !user.roles?.includes('Admin') && !user.roles?.includes('SuperAdmin') && !user.roles?.includes('Manager')
-                );
-                setUsers(regularUsers);
+                // Backend already filters based on current user's role
+                // No need for additional frontend filtering
+                setUsers(data);
             } else {
                 setError("Failed to fetch users");
             }
@@ -83,6 +69,19 @@ const ManagerDashboard = () => {
         }
         fetchUsers();
     }, [token, navigate, fetchUsers]);
+
+    // Show loading state while permissions are being fetched
+    // This MUST come after all hooks
+    if (!contextPermissions) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading permissions...</p>
+                </div>
+            </div>
+        );
+    }
 
     const handleAddUser = async () => {
         if (!newUser.name || !newUser.email || !newUser.password) {

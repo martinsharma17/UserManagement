@@ -148,6 +148,10 @@ internal class Program
         builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
         builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
 
+        // --- Email Service Registration ---
+        // Register the email service for password reset and other email functionality
+        builder.Services.AddScoped<AUTHApi.Services.IEmailService, AUTHApi.Services.EmailService>();
+
 
 
         var app = builder.Build();

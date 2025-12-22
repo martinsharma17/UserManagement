@@ -171,22 +171,46 @@ export const AuthProvider = ({ children }) => {
         }
     }, [apiBase]);
 
-    // Fetch permissions whenever token or user changes, AND on window focus
+    // ============================================================================
+    // TAB-ISOLATED SESSION - Fetch permissions on focus + periodic refresh
+    // ============================================================================
+    // Each tab maintains its own independent session
+    // Periodic refresh ensures policy changes made in other tabs are reflected
     useEffect(() => {
         if (token && user) {
-            console.log('🔄 Token/User changed, fetching permissions...');
+            console.log('🔄 Token/User changed, fetching permissions for THIS tab...');
             fetchPermissions(token);
         }
 
+        // Refresh permissions when user switches back to this tab
         const handleFocus = () => {
             if (token) {
-                console.log('👀 Window focused, refreshing permissions...');
+                console.log('👀 Tab focused, refreshing permissions...');
                 fetchPermissions(token);
             }
         };
 
+        // ============================================================================
+        // PERIODIC PERMISSION REFRESH
+        // ============================================================================
+        // Auto-refresh permissions every 10 seconds to detect policy changes
+        // This ensures if SuperAdmin changes policies, other tabs pick it up
+        let refreshInterval;
+        if (token && user) {
+            refreshInterval = setInterval(() => {
+                console.log('🔄 Auto-refreshing permissions (policy sync)...');
+                fetchPermissions(token);
+            }, 10000); // 10 seconds
+        }
+
         window.addEventListener('focus', handleFocus);
-        return () => window.removeEventListener('focus', handleFocus);
+
+        return () => {
+            window.removeEventListener('focus', handleFocus);
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        };
     }, [token, user, fetchPermissions]);
 
     // --- LOGIN FUNCTION ---

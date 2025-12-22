@@ -21,6 +21,10 @@ import AdminDashboard from "./pages/AdminDashboard.jsx";
 import ManagerDashboard from "./pages/ManagerDashboard.jsx";
 import UserDashboard from "./pages/UserDashboard.jsx";
 
+// Password reset pages
+import ForgotPassword from './pages/ForgotPassword.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
+
 import { jwtDecode } from "jwt-decode";
 import Navbar from './components/layout/Navbar.jsx';
 import ErrorBoundary from './components/common/ErrorBoundary.jsx';
@@ -83,6 +87,10 @@ function AppContent() {
           {/* Public Routes: Accessible by anyone */}
           <Route path="/login" element={<LoginForm />} />
           <Route path="/register" element={<RegisterForm />} />
+
+          {/* Password Reset Routes: Public (no auth required) */}
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* 
              ==============================================================================

@@ -34,17 +34,15 @@ const AdminDashboard = () => {
     const fetchUsers = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await fetch(`${apiBase}/api/Admin/users`, {
+            const response = await fetch(`${apiBase}/api/User/users`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
             if (response.ok) {
                 const data = await response.json();
-                // Filter out admins if they appear in the list
-                const regularUsers = data.filter(user =>
-                    !user.roles?.includes('Admin') && !user.roles?.includes('SuperAdmin')
-                );
-                setUsers(regularUsers);
+                // Backend already filters based on current user's role
+                // No need for additional frontend filtering
+                setUsers(data);
             } else {
                 setError("Failed to fetch users");
             }

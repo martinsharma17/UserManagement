@@ -25,6 +25,73 @@ public class UserController : ControllerBase
         return Ok(new { user.Id, user.Email, user.UserName, Roles = roles });
     }
 
+    // GET: api/User/users
+    // Returns all users filtered based on the current user's role/permissions
+    // Replaces the redundant AdminController and ManagerController
+    [HttpGet("users")]
+    public async Task<IActionResult> GetAllUsers()
+    {
+        var currentUser = await _userManager.GetUserAsync(User);
+        if (currentUser == null) return Unauthorized();
+
+        var currentUserRoles = await _userManager.GetRolesAsync(currentUser);
+        
+        var allUsers = _userManager.Users.ToList();
+        var result = new System.Collections.Generic.List<object>();
+        
+        foreach (var user in allUsers)
+        {
+            var userRoles = await _userManager.GetRolesAsync(user);
+            
+            // Permission-based filtering logic:
+            // - SuperAdmin sees everyone
+            // - Admin sees non-SuperAdmin users only
+            // - Manager sees only regular users (not Admin, Manager, or SuperAdmin)
+            // - User and custom roles NEVER see SuperAdmin
+            
+            bool canView = false;
+            
+            if (currentUserRoles.Contains("SuperAdmin"))
+            {
+                canView = true; // SuperAdmin sees all users including other SuperAdmins
+            }
+            else if (currentUserRoles.Contains("Admin"))
+            {
+                canView = !userRoles.Contains("SuperAdmin"); // Admin sees all except SuperAdmin
+            }
+            else if (currentUserRoles.Contains("Manager"))
+            {
+                // Manager sees only regular users (no privileged roles)
+                canView = !userRoles.Contains("SuperAdmin") 
+                       && !userRoles.Contains("Admin") 
+                       && !userRoles.Contains("Manager");
+            }
+            else
+            {
+                // For User and custom roles: NEVER show SuperAdmin, Admin, or Manager
+                canView = !userRoles.Contains("SuperAdmin")
+                       && !userRoles.Contains("Admin")
+                       && !userRoles.Contains("Manager");
+            }
+            
+            if (canView)
+            {
+                result.Add(new
+                {
+                    user.Id,
+                    user.Email,
+                    user.UserName,
+                    user.IsActive,
+                    Name = user.UserName,
+                    Roles = userRoles
+                });
+            }
+        }
+        
+        return Ok(result);
+    }
+
+
     // GET: api/User/my-permissions
     // Returns the consolidated permissions for the CURRENT user based on their roles
     [HttpGet("my-permissions")]

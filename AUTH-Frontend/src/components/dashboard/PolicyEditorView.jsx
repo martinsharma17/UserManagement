@@ -436,6 +436,18 @@ const PolicyEditorView = ({ roles, onPermissionsUpdated }) => {
                                                         </div>
                                                     </td>
                                                     {actions.map(action => {
+                                                        // -----------------------------------------------------------------------
+                                                        // SPECIAL CASE: 'Tasks' and 'Projects' parents only need Sidebar toggle
+                                                        // -----------------------------------------------------------------------
+                                                        if ((resource.id === 'tasks' || resource.id === 'projects' || resource.id === 'my_projects') 
+                                                            && action.id !== 'sidebar') {
+                                                            return (
+                                                                <td key={action.id} className="py-4 px-4 text-center align-middle">
+                                                                    <span className="text-gray-300 select-none">-</span>
+                                                                </td>
+                                                            );
+                                                        }
+
                                                         const isChecked = resPolicy[action.id] === true;
 
                                                         // Styles based on action type
