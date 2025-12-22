@@ -37,7 +37,7 @@ const SuperAdminDashboard = () => {
     const [activeView, setActiveView] = useState("dashboard");
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
-    const { token, logout, apiBase, user } = useAuth();
+    const { token, logout, apiBase, user, permissions } = useAuth();
     const navigate = useNavigate();
     const menuItems = getSuperAdminMenuItems();
 
@@ -68,14 +68,17 @@ const SuperAdminDashboard = () => {
         setLoading(true);
         try {
             const [usersRes, adminsRes, rolesRes] = await Promise.all([
-                fetch(`${apiBase}/api/Roles/AllUsers`, {
+                fetch(`${apiBase}/api/Roles/AllUsers?t=${new Date().getTime()}`, {
                     headers: { Authorization: `Bearer ${token}` },
+                    cache: 'no-store'
                 }),
-                fetch(`${apiBase}/api/Roles/AllAdmins`, {
+                fetch(`${apiBase}/api/Roles/AllAdmins?t=${new Date().getTime()}`, {
                     headers: { Authorization: `Bearer ${token}` },
+                    cache: 'no-store'
                 }),
-                fetch(`${apiBase}/api/Roles`, {
+                fetch(`${apiBase}/api/Roles?t=${new Date().getTime()}`, {
                     headers: { Authorization: `Bearer ${token}` },
+                    cache: 'no-store'
                 })
             ]);
 
@@ -477,6 +480,7 @@ const SuperAdminDashboard = () => {
                 menuItems={menuItems}
                 onLogout={handleLogout}
                 user={user}
+                permissions={permissions}
             />
 
             {/* Main Content */}

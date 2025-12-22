@@ -1,6 +1,8 @@
 // src/components/dashboard/Sidebar.jsx
 import React from 'react';
 
+import SidebarUserContext from './SidebarUserContext.jsx'; // [NEW]
+
 const Sidebar = ({
     sidebarOpen,
     setSidebarOpen,
@@ -8,7 +10,8 @@ const Sidebar = ({
     setActiveView,
     menuItems,
     onLogout,
-    user
+    user,        // [FIX] Restored user prop
+    permissions  // [NEW] Accept permissions prop
 }) => {
     const [expandedMenus, setExpandedMenus] = React.useState({});
 
@@ -51,9 +54,17 @@ const Sidebar = ({
                         setSidebarOpen={setSidebarOpen}
                         expandedMenus={expandedMenus}
                         toggleMenu={toggleMenu}
+                        permissions={permissions} // [NEW] Pass permissions
                     />
                 ))}
             </nav>
+
+            {/* User Context Card (Extracted Component) */}
+            <SidebarUserContext
+                user={user}
+                permissions={permissions}
+                sidebarOpen={sidebarOpen}
+            />
 
             {/* Sidebar Footer */}
             <div className="p-4 border-t border-gray-700">
@@ -80,7 +91,8 @@ const SidebarItem = ({
     sidebarOpen,
     setSidebarOpen,
     expandedMenus,
-    toggleMenu
+    toggleMenu,
+    permissions // [NEW]
 }) => {
     const Icon = item.icon;
     const hasChildren = item.children && item.children.length > 0;
@@ -105,10 +117,10 @@ const SidebarItem = ({
                 }}
                 disabled={item.disabled}
                 className={`w-full flex items-center justify-between py-2 rounded-lg transition-colors ${isActive
-                        ? "bg-blue-600 text-white"
-                        : item.disabled
-                            ? "text-gray-500 cursor-not-allowed"
-                            : "text-gray-300 hover:bg-gray-800"
+                    ? "bg-blue-600 text-white"
+                    : item.disabled
+                        ? "text-gray-500 cursor-not-allowed"
+                        : "text-gray-300 hover:bg-gray-800"
                     }`}
                 style={{ paddingLeft, paddingRight: '1rem' }}
                 title={item.title}
@@ -124,6 +136,26 @@ const SidebarItem = ({
 
                     {sidebarOpen && <span className="text-sm truncate">{item.title}</span>}
                 </div>
+
+                {/* [NEW] Permission Context Badges */}
+                {sidebarOpen && permissions && item.permission && item.permission.startsWith('view_') && (
+                    <div className="flex items-center ml-auto mr-2">
+                        {(() => {
+                            const resourceKey = item.permission.replace('view_', '');
+                            const resourcePerms = permissions[resourceKey];
+                            if (!resourcePerms) return null;
+
+                            return (
+                                <div className="flex bg-gray-800 rounded px-1 py-0.5">
+                                    <PermissionBadge label="Create" active={resourcePerms.create} color="bg-green-600" />
+                                    <PermissionBadge label="Read" active={resourcePerms.read} color="bg-blue-600" />
+                                    <PermissionBadge label="Update" active={resourcePerms.update} color="bg-yellow-600" />
+                                    <PermissionBadge label="Delete" active={resourcePerms.delete} color="bg-red-600" />
+                                </div>
+                            );
+                        })()}
+                    </div>
+                )}
 
                 {hasChildren && sidebarOpen && (
                     <svg
@@ -151,11 +183,22 @@ const SidebarItem = ({
                             setSidebarOpen={setSidebarOpen}
                             expandedMenus={expandedMenus}
                             toggleMenu={toggleMenu}
+                            permissions={permissions}
                         />
                     ))}
                 </div>
             )}
         </div>
+    );
+};
+
+// [NEW] Helper to render permission badge
+const PermissionBadge = ({ label, active, color }) => {
+    if (!active) return null;
+    return (
+        <span className={`text-[10px] uppercase font-bold px-1 rounded mx-0.5 ${color} text-white opacity-80`} title={label}>
+            {label.charAt(0)}
+        </span>
     );
 };
 

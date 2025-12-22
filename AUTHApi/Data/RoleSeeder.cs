@@ -65,6 +65,23 @@ namespace AUTHApi.Data
                 await userManager.AddToRoleAsync(superAdmin, "User");
 
             Console.WriteLine("SUPER ADMIN READY ✔");
+
+            // SELF-HEAL: Ensure ALL users are Active (Migration fix)
+            // This fixes the issue where the new column defaults to 0 (Inactive)
+            var allUsers = userManager.Users.ToList();
+            bool changesMade = false;
+            foreach(var u in allUsers)
+            {
+                if (!u.IsActive)
+                {
+                    u.IsActive = true;
+                    // We don't await individually to speed up, or we can. 
+                    // Let's await to be safe.
+                    await userManager.UpdateAsync(u);
+                    changesMade = true;
+                }
+            }
+            if(changesMade) Console.WriteLine("Re-activated all users from default migration state.");
         }
     }
 }

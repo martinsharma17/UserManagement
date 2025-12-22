@@ -310,6 +310,7 @@ const AdminDashboard = () => {
                 menuItems={menuItems}
                 onLogout={handleLogout}
                 user={user}
+                permissions={authPermissions}
             />
 
             {/* Main Content */}

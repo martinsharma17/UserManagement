@@ -130,11 +130,34 @@ namespace AUTHApi.Controllers
                 return Unauthorized(new { success = false, message = "Invalid email or password" });
             }
 
-            // 3. Generate JWT Token
+            // 3. Check Account Status (IsActive)
+            // EXEMPT SuperAdmin from this check to ensure they can never be locked out.
+            var userRoles = await _userManager.GetRolesAsync(user);
+            bool isSuperAdmin = userRoles.Contains("SuperAdmin") || user.Email.Equals("martinsharma18@gmail.com", StringComparison.OrdinalIgnoreCase);
+
+            if (!isSuperAdmin)
+            {
+                // Only check IsActive for non-SuperAdmins
+                if (!user.IsActive)
+                {
+                     return Unauthorized(new { success = false, message = "Admin blocked you" });
+                }
+            }
+            else
+            {
+                // Force Ensure Active for SuperAdmin
+                if (!user.IsActive)
+                {
+                    user.IsActive = true;
+                    await _userManager.UpdateAsync(user);
+                }
+            }
+
+            // 4. Generate JWT Token
             // This token contains all the permissions (claims & roles) the user has.
             var token = await GenerateJWTToken(user);
             
-            // 4. Get Roles for frontend (so frontend knows what UI to show)
+            // 5. Get Roles for frontend (so frontend knows what UI to show)
             var roles = await _userManager.GetRolesAsync(user);
 
             return Ok(new { success = true, token = token, roles = roles });

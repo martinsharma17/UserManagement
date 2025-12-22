@@ -1,5 +1,6 @@
 using AUTHApi.Data;
 using AUTHApi.Entities;
+// Timestamp update to force code pick-up
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -131,7 +132,7 @@ namespace AUTHApi.Controllers
             foreach (var user in users)
             {
                 var roles = await _userManager.GetRolesAsync(user);
-                userList.Add(new { user.Id, user.Name, user.Email, Roles = roles });
+                userList.Add(new { user.Id, user.Name, user.Email, isActive = user.IsActive, Roles = roles });
             }
 
             return Ok(new { success = true, users = userList });
@@ -153,7 +154,7 @@ namespace AUTHApi.Controllers
             foreach (var admin in admins)
             {
                 var roles = await _userManager.GetRolesAsync(admin);
-                adminList.Add(new { admin.Id, admin.Name, admin.Email, Roles = roles });
+                adminList.Add(new { admin.Id, admin.Name, admin.Email, isActive = admin.IsActive, Roles = roles });
             }
 
             return Ok(new { success = true, admins = adminList });
@@ -186,7 +187,7 @@ namespace AUTHApi.Controllers
             foreach (var user in users)
             {
                 var roles = await _userManager.GetRolesAsync(user);
-                userList.Add(new { user.Id, user.Name, user.Email, Roles = roles });
+                userList.Add(new { user.Id, user.Name, user.Email, isActive = user.IsActive, Roles = roles });
             }
 
             return Ok(new { success = true, users = userList });

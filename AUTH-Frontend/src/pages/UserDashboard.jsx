@@ -181,6 +181,7 @@ const UserDashboard = () => {
                 menuItems={menuItems}
                 onLogout={handleLogout}
                 user={user}
+                permissions={permissions}
             />
 
             {/* Main Content Area */}

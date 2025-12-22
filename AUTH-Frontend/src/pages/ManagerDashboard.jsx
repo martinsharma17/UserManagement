@@ -293,6 +293,7 @@ const ManagerDashboard = () => {
                 menuItems={menuItems}
                 onLogout={handleLogout}
                 user={user}
+                permissions={permissions}
             />
 
             {/* Main Content */}

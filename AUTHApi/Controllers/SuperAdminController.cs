@@ -28,7 +28,9 @@ public class SuperAdminController : ControllerBase
         var users = _userManager.Users.Select(u => new {
             u.Id,
             u.UserName,
-            u.Email
+            // u.Email, // This was original
+            u.Email,
+            u.IsActive
         }).ToList();
 
         return Ok(users);
@@ -39,7 +41,7 @@ public class SuperAdminController : ControllerBase
     public async Task<IActionResult> GetAllAdmins()
     {
         var admins = (await _userManager.GetUsersInRoleAsync("Admin"))
-                     .Select(u => new { u.Id, u.Email, u.UserName })
+                     .Select(u => new { u.Id, u.Email, u.UserName, u.IsActive })
                      .ToList();
         return Ok(admins);
     }
@@ -117,5 +119,34 @@ public class SuperAdminController : ControllerBase
         }
 
         return Ok(new { success = true, message = "Admin access revoked successfully" });
+    }
+
+    // POST: api/SuperAdmin/toggle-status/{userId}
+    [HttpPost("toggle-status/{userId}")]
+    public async Task<IActionResult> ToggleUserStatus(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return NotFound(new { success = false, message = "User not found" });
+
+        // Prevent deactivating yourself if you are the logged in SuperAdmin
+        var currentUserId = _userManager.GetUserId(User);
+        if (userId == currentUserId)
+        {
+             return BadRequest(new { success = false, message = "You cannot deactivate yourself." });
+        }
+
+        // Prevent deactivating ANY SuperAdmin
+        if (await _userManager.IsInRoleAsync(user, "SuperAdmin"))
+        {
+            return BadRequest(new { success = false, message = "Cannot deactivate a SuperAdmin account." });
+        }
+
+        user.IsActive = !user.IsActive;
+        var result = await _userManager.UpdateAsync(user);
+
+        if (!result.Succeeded)
+            return BadRequest(new { success = false, message = "Failed to update user status", errors = result.Errors });
+
+        return Ok(new { success = true, message = user.IsActive ? "User activated" : "User deactivated", isActive = user.IsActive });
     }
 }
