@@ -5,6 +5,7 @@ import Sidebar from '../components/dashboard/Sidebar.jsx';
 import { getManagerMenuItems } from '../components/dashboard/sidebarItems.jsx';
 import AdminDashboardView from '../components/dashboard/admin/AdminDashboardView.jsx';
 import AdminUsersListView from '../components/dashboard/admin/AdminUsersListView.jsx';
+import ProjectSettingsDummy from '../components/dashboard/ProjectSettingsDummy.jsx'; // [NEW]
 import AdminChartsView from '../components/dashboard/admin/AdminChartsView.jsx';
 import AdminResourceView from '../components/dashboard/admin/AdminResourceView.jsx';
 import LoginFormView from '../components/dashboard/LoginFormView.jsx';
@@ -224,6 +225,9 @@ const ManagerDashboard = () => {
                         }}
                     />
                 );
+            case 'project_settings':
+                if (!permissions.view_project_settings && permissions.view_project_settings !== undefined) return <div className="p-8 text-center text-red-500">Access Denied</div>;
+                return <ProjectSettingsDummy />;
             case 'projects':
                 if (!permissions.read_projects && permissions.read_projects !== undefined) return <div className="p-8 text-center text-red-500">Access Denied</div>;
                 return (

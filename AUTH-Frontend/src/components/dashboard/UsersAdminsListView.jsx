@@ -78,36 +78,43 @@ const UsersAdminsListView = ({
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex space-x-2">
-                                                            <button
-                                                                onClick={() => onAssignRole(user)}
-                                                                className="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200"
-                                                            >
-                                                                Assign Role
-                                                            </button>
-                                                            {/* Show Make Admin/Revoke Admin only if relevant, or generic delete */}
-                                                            {roleName === "Admin" || roleName === "SuperAdmin" ? (
-                                                                <button
-                                                                    onClick={() => onRevokeAdmin(user.Id || user.id)}
-                                                                    className="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200"
-                                                                >
-                                                                    Revoke Admin
-                                                                </button>
+                                                            {/* Safety Check: Protected User */}
+                                                            {(user.Email === 'martinsharma18@gmail.com' || user.email === 'martinsharma18@gmail.com') ? (
+                                                                <span className="text-xs text-gray-400 font-medium italic px-2">Protected Account</span>
                                                             ) : (
-                                                                !isAlreadyAdmin(user) && (
+                                                                <>
                                                                     <button
-                                                                        onClick={() => onMakeAdmin(user.Id || user.id)}
-                                                                        className="px-3 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded"
+                                                                        onClick={() => onAssignRole(user)}
+                                                                        className="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200"
                                                                     >
-                                                                        Make Admin
+                                                                        Assign Role
                                                                     </button>
-                                                                )
+                                                                    {/* Show Make Admin/Revoke Admin only if relevant, or generic delete */}
+                                                                    {roleName === "Admin" || roleName === "SuperAdmin" ? (
+                                                                        <button
+                                                                            onClick={() => onRevokeAdmin(user.Id || user.id)}
+                                                                            className="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200"
+                                                                        >
+                                                                            Revoke Admin
+                                                                        </button>
+                                                                    ) : (
+                                                                        !isAlreadyAdmin(user) && (
+                                                                            <button
+                                                                                onClick={() => onMakeAdmin(user.Id || user.id)}
+                                                                                className="px-3 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded"
+                                                                            >
+                                                                                Make Admin
+                                                                            </button>
+                                                                        )
+                                                                    )}
+                                                                    <button
+                                                                        onClick={() => onDelete(user.Id || user.id, roleName === "Admin")}
+                                                                        className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                                                                    >
+                                                                        Delete User
+                                                                    </button>
+                                                                </>
                                                             )}
-                                                            <button
-                                                                onClick={() => onDelete(user.Id || user.id, roleName === "Admin")}
-                                                                className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
-                                                            >
-                                                                Delete User
-                                                            </button>
                                                         </div>
                                                     </td>
                                                 </tr>

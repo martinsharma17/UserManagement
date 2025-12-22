@@ -77,7 +77,7 @@ const Dashboard = () => {
                 {/* Welcome Section */}
                 <div className="bg-white p-6 rounded-xl shadow">
                     <h2 className="text-xl font-semibold text-gray-800">
-                        Welcome, <span className="text-blue-600">{user.email}</span>
+                        Welcome, <span className="text-blue-600">{user?.name || user?.email}</span>
                     </h2>
                     <p className="text-gray-600 mt-1">
                         User ID: <span className="font-medium text-gray-700">{user.id}</span>

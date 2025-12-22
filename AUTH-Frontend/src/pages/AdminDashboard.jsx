@@ -11,6 +11,7 @@ import LoginFormView from '../components/dashboard/LoginFormView.jsx';
 import RegisterFormView from '../components/dashboard/RegisterFormView.jsx';
 import AddUserModal from '../components/dashboard/AddUserModal.jsx';
 import AdminResourceView from '../components/dashboard/admin/AdminResourceView.jsx'; // [NEW]
+import ProjectSettingsDummy from '../components/dashboard/ProjectSettingsDummy.jsx'; // [NEW]
 import TaskListView from '../components/dashboard/tasks/TaskListView.jsx';
 import TaskKanbanView from '../components/dashboard/tasks/TaskKanbanView.jsx';
 
@@ -253,14 +254,7 @@ const AdminDashboard = () => {
                 );
             case 'project_settings':
                 if (!authPermissions?.view_project_settings) return <div className="p-8 text-center text-red-500">Access Denied</div>;
-                return (
-                    <AdminResourceView
-                        resourceName="Project Settings"
-                        canCreate={authPermissions?.create_project_settings}
-                        canUpdate={authPermissions?.update_project_settings}
-                        canDelete={authPermissions?.delete_project_settings}
-                    />
-                );
+                return <ProjectSettingsDummy />;
             case 'charts':
                 if (!authPermissions?.view_charts) {
                     return (

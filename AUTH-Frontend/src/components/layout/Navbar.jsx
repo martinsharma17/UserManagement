@@ -1,43 +1,4 @@
-// // src/components/Navbar.js
-// import React, { useState } from 'react';
-// import { useAuth } from '../context/AuthContext.jsx';
-// import { useNavigate } from 'react-router-dom';
 
-// const Navbar = () => {
-//     const { user, logout } = useAuth();
-//     const navigate = useNavigate();
-//     const [showProfileMenu, setShowProfileMenu] = useState(false);
-
-//     const handleLogout = () => {
-//         logout();
-//         navigate('/login', { replace: true });
-//     };
-
-//     return (
-//         <nav className="navbar">
-//             <div className="navbar-brand">
-//                 My Auth App
-//             </div>
-//             <div className="navbar-profile">
-//                 {user && (
-//                     <div className="profile-icon" onClick={() => setShowProfileMenu(!showProfileMenu)}>
-//                         <span>{user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}</span>
-//                         {showProfileMenu && (
-//                             <div className="profile-menu">
-//                                 <p>Name: {user.name || 'N/A'}</p>
-//                                 <p>Email: {user.email}</p>
-//                                 <p>Roles: {user.roles ? user.roles.join(', ') : 'N/A'}</p>
-//                                 <button onClick={handleLogout}>Logout</button>
-//                             </div>
-//                         )}
-//                     </div>
-//                 )}
-//             </div>
-//         </nav>
-//     );
-// };
-
-// export default Navbar;
 
 // src/components/Navbar.jsx
 import React, { useState, useRef, useEffect } from 'react';
@@ -137,10 +98,15 @@ const Navbar = () => {
         return user.email || '';
     };
 
-    // Safe function to get user roles
+    // Safe function to get user roles - Returns only the highest role for display
     const getUserRoles = () => {
         if (!user || !user.roles) return ['User'];
-        return Array.isArray(user.roles) ? user.roles : ['User'];
+        const roles = Array.isArray(user.roles) ? user.roles : ['User'];
+
+        if (roles.includes('SuperAdmin')) return ['SuperAdmin'];
+        if (roles.includes('Admin')) return ['Admin'];
+
+        return roles.length > 0 ? roles : ['User'];
     };
 
     if (!user) {

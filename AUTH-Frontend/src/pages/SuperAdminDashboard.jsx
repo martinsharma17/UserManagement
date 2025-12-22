@@ -16,6 +16,7 @@ import AssignRoleModal from '../components/dashboard/AssignRoleModal.jsx';
 import PolicyEditorView from '../components/dashboard/PolicyEditorView.jsx'; // [NEW]
 import SettingsView from '../components/dashboard/SettingsView.jsx';
 import NotificationsView from '../components/dashboard/NotificationsView.jsx';
+import ProjectSettingsDummy from '../components/dashboard/ProjectSettingsDummy.jsx'; // [NEW]
 
 const SuperAdminDashboard = () => {
     const [users, setUsers] = useState([]);
@@ -393,6 +394,8 @@ const SuperAdminDashboard = () => {
                         }}
                     />
                 );
+            case 'project_settings':
+                return <ProjectSettingsDummy />;
             case 'settings':
                 return <SettingsView />;
             case 'notifications':

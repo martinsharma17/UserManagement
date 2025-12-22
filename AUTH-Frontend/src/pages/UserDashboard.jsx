@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/dashboard/Sidebar.jsx';
 import { getUserMenuItems } from '../components/dashboard/sidebarItems.jsx';
 import SettingsView from '../components/dashboard/SettingsView.jsx';
+import ProjectSettingsDummy from '../components/dashboard/ProjectSettingsDummy.jsx'; // [NEW]
 import NotificationsView from '../components/dashboard/NotificationsView.jsx';
 import AdminResourceView from '../components/dashboard/admin/AdminResourceView.jsx'; // Reuse generic resource view
 import TaskListView from '../components/dashboard/tasks/TaskListView.jsx';
@@ -146,6 +147,9 @@ const UserDashboard = () => {
                         canDelete={permissions.delete_projects}
                     />
                 );
+            case 'project_settings':
+                if (!permissions.view_project_settings && permissions.view_project_settings !== undefined) return <div className="p-8 text-center text-red-500">Access Denied</div>;
+                return <ProjectSettingsDummy />;
             case 'reports':
                 if (!permissions.read_reports) return <div className="p-8 text-center text-red-500">Access Denied (Requires Read Permission)</div>;
                 return <div className="p-8 text-center text-gray-500">Reports Module</div>;

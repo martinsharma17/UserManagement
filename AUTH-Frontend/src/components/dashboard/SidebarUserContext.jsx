@@ -9,7 +9,7 @@ const SidebarUserContext = ({ user, permissions, sidebarOpen }) => {
 
     return (
         <div className="px-4 py-2 bg-gray-800 border-t border-gray-700">
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            {/* <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                 My Access
             </div>
             <div className="space-y-1">
@@ -21,7 +21,7 @@ const SidebarUserContext = ({ user, permissions, sidebarOpen }) => {
                     <span>Permissions:</span>
                     <span className="font-mono bg-gray-700 px-2 rounded text-white">{permissionsCount}</span>
                 </div>
-            </div>
+            </div> */}
         </div>
     );
 };

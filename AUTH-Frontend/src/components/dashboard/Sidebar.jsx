@@ -26,7 +26,17 @@ const Sidebar = ({
         <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-gray-900 text-white transition-all duration-300 flex flex-col`}>
             {/* Sidebar Header */}
             <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-                {sidebarOpen && <h2 className="text-xl font-bold">{user?.email || "User"}</h2>}
+                {/* {sidebarOpen && <h2 className="text-xl font-bold">{user?.email || "User"}</h2>} */}
+                {sidebarOpen && (
+                    <h2 className="text-xl font-bold">
+                        {(() => {
+                            const roles = user?.roles || [];
+                            if (roles.includes("SuperAdmin")) return "SuperAdmin";
+                            if (roles.includes("Admin")) return "Admin";
+                            return roles[0] || "User";
+                        })()} Dashboard
+                    </h2>
+                )}
                 <button
                     onClick={() => setSidebarOpen(!sidebarOpen)}
                     className="text-gray-400 hover:text-white"
