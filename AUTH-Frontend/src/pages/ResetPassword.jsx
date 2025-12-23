@@ -62,7 +62,7 @@ const ResetPassword = () => {
             try {
                 // Call backend to verify the token is valid
                 const response = await fetch(
-                    `${apiBase}/api/PasswordReset/verify-token?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`
+                    `${apiBase}/api/UserAuth/verify-token?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`
                 );
                 const data = await response.json();
 
@@ -112,7 +112,7 @@ const ResetPassword = () => {
         try {
             // Call backend to reset the password
             const response = await fetch(
-                `${apiBase}/api/PasswordReset/reset-password?email=${encodeURIComponent(email)}`,
+                `${apiBase}/api/UserAuth/reset-password?email=${encodeURIComponent(email)}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

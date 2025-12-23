@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using AUTHApi.Services;
 
 namespace AUTHApi.Controllers
 {
@@ -33,6 +34,7 @@ namespace AUTHApi.Controllers
         private readonly string? _JwtIssuer;  // Issuer of the token (this server)
         private readonly string? _JwtAudience;  // Audience of the token (who can use it)
         private readonly int _JwtExpiry;  // Expiration time in minutes
+        private readonly IConfiguration _configuration; // Configuration interface
 
         public UserAuthController(
             UserManager<ApplicationUser> userManager,
@@ -43,6 +45,7 @@ namespace AUTHApi.Controllers
             _userManager = userManager;
             _signinManager = signInManager;
             _roleManager = roleManager;
+            _configuration = configuration;
 
             // Read JWT settings from configuration
             _jwtKey = configuration["Jwt:Key"];
@@ -236,6 +239,88 @@ namespace AUTHApi.Controllers
             // Return the serialised string version of the token
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-    }
 
+        // ============================================================================
+        // PASSWORD RESET ENDPOINTS
+        // ============================================================================
+
+        /// <summary>
+        /// Initiates the password reset process.
+        /// Endpoint: POST /api/UserAuth/forgot-password
+        /// </summary>
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto model, [FromServices] IEmailService emailService)
+        {
+            if (model == null || string.IsNullOrEmpty(model.Email))
+                return BadRequest(new { success = false, message = "Email is required." });
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                // Don't reveal user doesn't exist
+                return Ok(new { success = true, message = "If your email is registered, you will receive a password reset link." });
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            
+            // Build the frontend URL
+            var frontendUrl = _configuration["Frontend:Url"] ?? "http://localhost:5173";
+            var resetLink = $"{frontendUrl}/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
+
+            try
+            {
+                await emailService.SendPasswordResetEmailAsync(user.Email, resetLink);
+                return Ok(new { success = true, message = "If your email is registered, you will receive a password reset link." });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending email: {ex.Message}");
+                return StatusCode(500, new { success = false, message = "Failed to send email. Please try again later." });
+            }
+        }
+
+        /// <summary>
+        /// Verifies a password reset token.
+        /// Endpoint: GET /api/UserAuth/verify-token
+        /// </summary>
+        [HttpGet("verify-token")]
+        public async Task<IActionResult> VerifyToken([FromQuery] string email, [FromQuery] string token)
+        {
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(token))
+                return BadRequest(new { success = false, message = "Invalid request" });
+
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+                return Ok(new { valid = false, message = "Invalid token" }); // User not found effectively means token invalid for this context
+
+            var isValid = await _userManager.VerifyUserTokenAsync(user, _userManager.Options.Tokens.PasswordResetTokenProvider, "ResetPassword", token);
+            
+            return Ok(new { valid = isValid });
+        }
+
+        /// <summary>
+        /// Resets the password using the token.
+        /// Endpoint: POST /api/UserAuth/reset-password
+        /// </summary>
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromQuery] string email, [FromBody] ResetPasswordDto model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.Token) || string.IsNullOrEmpty(model.NewPassword) || string.IsNullOrEmpty(email))
+                return BadRequest(new { success = false, message = "Invalid request" });
+
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+                return BadRequest(new { success = false, message = "Invalid request" });
+
+            var result = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+            
+            if (result.Succeeded)
+            {
+                return Ok(new { success = true, message = "Password has been reset successfully." });
+            }
+
+            var errors = result.Errors.Select(e => e.Description).ToList();
+            return BadRequest(new { success = false, message = "Failed to reset password", errors = errors });
+        }
+    }
 }

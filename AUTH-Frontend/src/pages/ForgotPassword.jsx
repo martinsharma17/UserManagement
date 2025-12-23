@@ -48,7 +48,7 @@ const ForgotPassword = () => {
 
         try {
             // Call backend forgot password API
-            const response = await fetch(`${apiBase}/api/PasswordReset/forgot-password`, {
+            const response = await fetch(`${apiBase}/api/UserAuth/forgot-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })
