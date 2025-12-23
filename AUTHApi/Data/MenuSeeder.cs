@@ -78,3 +78,17 @@ namespace AUTHApi.Data
         }
     }
 }
+
+
+
+
+// INSERT INTO MenuItems (Title, ViewId, Icon, Permission, [Order], ParentId, IsVisible)
+// VALUES (
+//     'Support',        -- Title
+//     'support_view',   -- ViewId
+//     'HelpIcon',       -- Icon Component Name
+//     'view_support',   -- Permission Key
+//     10,               -- Order
+//     NULL,             -- ParentId (Top level)
+//     1                 -- IsVisible (1 = True, required for your schema)
+// );
