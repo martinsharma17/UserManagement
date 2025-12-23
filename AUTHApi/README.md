@@ -1,134 +1,124 @@
-# AUTHApi - Simple Role & Policy Based Authorization
+# � AUTHApi - Backend Code Documentation
 
-A simple ASP.NET Core API demonstrating Role-Based and Policy-Based Authorization.
+This documentation provides a detailed, file-by-file explanation of the backend codebase. This system is built on **ASP.NET Core 9.0** and uses **Entity Framework Core** for database operations.
 
-## 🚀 Quick Start
+---
 
-1. **Build and run:**
-   ```bash
-   dotnet build
-   dotnet run
-   ```
+## 📂 Project Structure Overview
 
-2. **Register a user:**
-   ```bash
-   POST /api/UserAuth/Register
-   {
-     "name": "John Doe",
-     "email": "john@example.com",
-     "password": "password123"
-   }
-   ```
+The project is organized into standard architectural layers:
 
-3. **Login:**
-   ```bash
-   POST /api/UserAuth/Login
-   {
-     "email": "john@example.com",
-     "password": "password123"
-   }
-   ```
+*   **`Controllers/`**: The "Doorway" to the API. Receives HTTP requests and sends responses.
+*   **`Data/`**: The "Brain" of the Database. Manages tables and initial data.
+*   **`DTOs/`**: "Envelopes" for data. Defines what users send (Input) and what they get back (Output).
+*   **`Entities/`**: "Blueprints" for Database tables.
+*   **`Services/`**: "Workers". Helper logic (like sending emails) that keeps controllers clean.
+*   **`Program.cs`**: The "Start Button". Configures and runs the application.
 
-4. **Use the token:**
-   ```bash
-   GET /api/Example/AdminOnly
-   Authorization: Bearer {your_token}
-   ```
+---
 
-## 📁 Project Structure
+## 📄 File-by-File Breakdown
 
-```
-AUTHApi/
-├── Controllers/
-│   ├── UserAuthController.cs    # Register, Login, Logout
-│   ├── RolesController.cs       # Manage roles (Admin only)
-│   └── ExampleController.cs      # Examples of authorization
-├── Data/
-│   ├── ApplicationUser.cs        # User model
-│   └── ApplicationDbContext.cs   # Database context
-├── Models/
-│   ├── RegisterModel.cs          # Registration model
-│   └── LoginModel.cs            # Login model
-├── Services/
-│   └── RoleSeeder.cs            # Auto-create roles on startup
-├── Program.cs                    # Main configuration
-├── AUTHORIZATION_GUIDE.md        # Detailed guide
-└── README.md                     # This file
-```
+### 1. 🎮 Controllers (`/Controllers`)
+These files handle incoming API requests.
 
-## 🔐 Authorization Types
+*   **`UserAuthController.cs`**:
+    *   **Purpose**: Handles public authentication.
+    *   **Endpoints**:
+        *   `Register`: Creates a new user.
+        *   `Login`: Checks password and issues a JWT Token.
+        *   `ForgotPassword` / `ResetPassword`: Handles encryption-based password recovery.
+*   **`RolesController.cs`**:
+    *   **Purpose**: Manages System Roles (e.g., "Admin", "Manager").
+    *   **Key Logic**: Allows creating new roles (e.g., "HR Manager") and managing valid permissions for them.
+*   **`PermissionsController.cs`**:
+    *   **Purpose**: Returns a list of all possible permissions in the system (e.g., `Permissions.Users.View`).
+*   **`AdminController.cs`**:
+    *   **Purpose**: Example of a protected controller.
+    *   **Restriction**: Accessible only by users with the `Admin` role.
+*   **`ManagerController.cs`**:
+    *   **Purpose**: Example of a protected controller for Managers.
+*   **`SuperAdminController.cs`**:
+    *   **Purpose**: The most unrestricted controller. Handles high-level system administrative tasks.
+*   **`PasswordResetController.cs`**:
+    *   **Purpose**: Logic for verifying reset tokens.
 
-### 1. Public (No Authorization)
-```csharp
-[HttpGet("Public")]
-public IActionResult Public() { }
-```
+### 2. 💽 Data & Seeding (`/Data`)
+These files manage the connection to SQL Server.
 
-### 2. Authenticated Only
-```csharp
-[HttpGet("Protected")]
-[Authorize]  // Any logged-in user
-public IActionResult Protected() { }
-```
+*   **`ApplicationDbContext.cs`**:
+    *   **Purpose**: Represents the Database Session.
+    *   **Function**: Maps C# classes (Entities) to SQL Tables. It inherits from `IdentityDbContext` to automatically handle User tables.
+*   **`RoleSeeder.cs`**:
+    *   **Purpose**: Runs *once* on startup.
+    *   **Function**: checks if standard roles (`SuperAdmin`, `Admin`, `User`) exist. If not, it creates them.
+*   **`PermissionSeeder.cs`**:
+    *   **Purpose**: Runs on startup.
+    *   **Function**: Ensures that all roles have their default permissions assigned.
+*   **`SeedRolesAndAdmin.cs`**:
+    *   **Purpose**: Specifically ensures the default "SuperAdmin" user exists with the correct password.
 
-### 3. Role-Based
-```csharp
-[HttpGet("Admin")]
-[Authorize(Roles = "Admin")]  // Only Admin
-public IActionResult Admin() { }
-```
+### 3. � Data Transfer Objects (`/DTOs`)
+Simple classes used to carry data over the network.
 
-### 4. Policy-Based
-```csharp
-[HttpGet("Policy")]
-[Authorize(Policy = "AdminOnly")]  // Uses policy from Program.cs
-public IActionResult Policy() { }
-```
+*   **`LoginModel.cs`**: Contains `Email` and `Password` (used during Login).
+*   **`RegisterModel.cs`**: Contains `Name`, `Email`, `Password` (used during Registration).
+*   **`ForgotPasswordDto.cs`**: Contains just `Email` (used when requesting a reset).
 
-## 📚 Documentation
+### 4. 🧬 Entities (`/Entities`)
+The actual data stored in the database.
 
-- **AUTHORIZATION_GUIDE.md** - Complete guide with examples
-- **Code comments** - Every file has detailed comments
+*   **`ApplicationUser.cs`**:
+    *   **Extends**: `IdentityUser`.
+    *   **Purpose**: Adds custom fields to the standard user, such as `FullName` or `ProfilePicture`.
 
-## 🎯 Key Features
+### 5. 🛠️ Services (`/Services`)
+Background logic helper classes.
 
-✅ Simple Role-Based Authorization  
-✅ Policy-Based Authorization  
-✅ JWT Token Authentication  
-✅ Automatic Role Assignment  
-✅ Role Management API  
+*   **`EmailService.cs`**:
+    *   **Purpose**: Connects to an SMTP server (like Gmail) to send real emails.
+    *   **Usage**: Called by `UserAuthController` when a user forgets their password.
 
-## 📝 Available Roles
+---
 
-- **Admin** - Full access
-- **User** - Standard access (assigned automatically on registration)
+## 🔄 System Flow: The Life of a Request
 
-## 🔗 API Endpoints
+Here is what happens systematically when a user tries to **Login**:
 
-### Authentication
-- `POST /api/UserAuth/Register` - Register new user
-- `POST /api/UserAuth/Login` - Login and get token
-- `POST /api/UserAuth/Logout` - Logout
+1.  **Frontend Request**:
+    *   The React App sends a `POST` request to `https://localhost:5033/api/UserAuth/Login`.
+    *   Body: `{ "email": "bob@example.com", "password": "123" }`.
 
-### Role Management (Admin Only)
-- `GET /api/Roles` - Get all roles
-- `POST /api/Roles/AssignRole` - Assign role to user
-- `POST /api/Roles/RemoveRole` - Remove role from user
-- `GET /api/Roles/UserRoles/{email}` - Get user's roles
+2.  **Controller Layer (`UserAuthController.cs`)**:
+    *   Receives the `LoginModel`.
+    *   Calls `UserManager` to find the user in the SQL Database.
+    *   Calls `SignInManager` to verify the hashed password.
 
-### Examples
-- `GET /api/Example/Public` - Public endpoint
-- `GET /api/Example/Authenticated` - Requires auth
-- `GET /api/Example/AdminOnly` - Requires Admin role
-- `GET /api/Example/UserOnly` - Requires User role
+3.  **Token Generation**:
+    *   If correct, the Controller builds a **JWT Token**.
+    *   It stuffs the token with **Claims**: `[ "id": 1, "role": "User", "email": "bob@..." ]`.
 
-## 💡 Tips
+4.  **Response**:
+    *   The API returns `200 OK` with the Token.
+    *   The Frontend saves this token to `localStorage`.
 
-1. New users automatically get "User" role
-2. Use Admin account to assign "Admin" role to others
-3. JWT tokens include roles - no need to check database
-4. See `ExampleController.cs` for authorization examples
+5.  **Next Request (Protected)**:
+    *   When Bob tries to view `AdminController`:
+    *   His request header has `Authorization: Bearer <TOKEN>`.
+    *   The **Middleware** (in `Program.cs`) checks the Token signature.
+    *   It sees Bob only has the "User" role.
+    *   The API returns `403 Forbidden`.
 
-For detailed documentation, see **AUTHORIZATION_GUIDE.md**
+---
 
+## ⚙️ Key Configuration Files
+
+*   **`appsettings.json`**:
+    *   **`ConnectionStrings`**: Tells the app where the SQL Database is.
+    *   **`Jwt`**: Contains the `Key` (Secret password for signing tokens) and `Issuer`.
+    *   **`Email`**: SMTP settings for sending emails.
+*   **`Program.cs`**:
+    *   Sets up Dependency Injection (DI).
+    *   Configures Swagger.
+    *   Adds Authentication & Authorization Policy Services.
 

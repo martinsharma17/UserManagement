@@ -47,12 +47,7 @@ const AdminDashboardView = ({ totalUsers, onViewUsers, onViewCharts, onAddUser }
                     >
                         Add User
                     </button>
-                    <button
-                        onClick={() => window.location.href = '/login'}
-                        className="px-4 py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
-                    >
-                        Login Page
-                    </button>
+              
                 </div>
             </div>
 

@@ -20,6 +20,7 @@ namespace AUTHApi.Controllers
     [ApiController]
     public class UserAuthController : ControllerBase
     {
+
         // ==========================================
         // DEPENDENCY INJECTION
         // ==========================================

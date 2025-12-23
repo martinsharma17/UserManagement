@@ -61,7 +61,67 @@ The system defines 4 hierarchy levels. Each level has access to its own dashboar
 
 ---
 
-## 🚀 Setup & Running Instructions
+## 🚀 Getting Started
+
+Follow these instructions to get a copy of the project up and running on your local machine.
+
+### 📋 Prerequisites
+
+Ensure you have the following installed:
+
+*   **Doenet SDK 9.0**: [Download .NET 9.0](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
+*   **Node.js (LTS)**: [Download Node.js](https://nodejs.org/) (v18+ recommended)
+*   **SQL Server**: [Download SQL Server Express](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) (or use a local instance)
+*   **Git**: [Download Git](https://git-scm.com/downloads)
+
+### 📥 Cloning the Repository
+
+```bash
+git clone https://github.com/your-username/UserManagement.git
+cd UserManagement
+```
+
+### ⚙️ Backend Setup (AUTHApi)
+
+1.  **Navigate to the backend directory**:
+    ```bash
+    cd AUTHApi
+    ```
+
+2.  **Configure Database**:
+    *   Open `appsettings.json`.
+    *   Update the `DefaultConnection` string if your SQL Server instance is different from `Server=localhost\\SQLEXPRESS`.
+
+3.  **Restore Dependencies & Database**:
+    ```bash
+    dotnet restore
+    dotnet ef database update
+    ```
+    *This command applies migrations and seeds the initial SuperAdmin user and Roles.*
+
+4.  **Run the Server**:
+    ```bash
+    dotnet run
+    ```
+    *The API will start at `http://localhost:5033` (or similar, check terminal output).*
+
+### 🎨 Frontend Setup (AUTH-Frontend)
+
+1.  **Open a new terminal** and navigate to the frontend directory:
+    ```bash
+    cd AUTH-Frontend
+    ```
+
+2.  **Install Dependencies**:
+    ```bash
+    npm install
+    ```
+
+3.  **Run the Development Server**:
+    ```bash
+    npm run dev
+    ```
+    *The application will be accessible at `http://localhost:5173`.*
 
 ### 1. Database Setup
 1.  Make sure you have **SQL Server** installed.
