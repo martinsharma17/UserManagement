@@ -32,7 +32,11 @@ internal class Program
         // ==========================================
         
         // Add controllers to the service container so API endpoints work.
-        builder.Services.AddControllers();
+        builder.Services.AddControllers()
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+            });
         // Add Swagger for API documentation and testing UI.
         builder.Services.AddSwaggerGen();
 
@@ -170,6 +174,9 @@ internal class Program
                 await RoleSeeder.SeedRolesAsync(services);
                 await RoleSeeder.SeedSuperAdminAsync(services);
                 
+                // Seed Menu Items
+                await MenuSeeder.SeedMenuItemsAsync(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>());
+
                 // Seed default permissions for each role
                 await PermissionSeeder.SeedDefaultPermissionsAsync(services);
             }

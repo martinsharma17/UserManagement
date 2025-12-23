@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
-import Sidebar from './dashboard/Sidebar.jsx';
-import { getViewComponent } from './dashboard/ViewMapper.jsx';
-import AddUserModal from './dashboard/AddUserModal.jsx';
-import AssignRoleModal from './dashboard/AssignRoleModal.jsx'; // Ensure this exists or remove if unused
+import Sidebar from '../components/dashboard/Sidebar.jsx';
+import { getViewComponent } from '../components/dashboard/ViewMapper.jsx';
+import AddUserModal from '../components/dashboard/AddUserModal.jsx';
+import AssignRoleModal from '../components/dashboard/AssignRoleModal.jsx';
 
 const Dashboard = () => {
     // 1. Auth & Context
@@ -20,13 +20,13 @@ const Dashboard = () => {
     // Data States (shared across views via props)
     const [users, setUsers] = useState([]);
     const [roles, setRoles] = useState([]);
-    const [admins, setAdmins] = useState([]); // For SuperAdmin view if needed
+    const [admins, setAdmins] = useState([]);
     const [loadingData, setLoadingData] = useState(false);
 
     // UI States
     const [showAddModal, setShowAddModal] = useState(false);
-    const [showAssignModal, setShowAssignModal] = useState(false); // If needed
-    const [newUser, setNewUser] = useState({ name: "", email: "", password: "" });
+    const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "User" });
+    const [showAssignModal, setShowAssignModal] = useState(false);
     const [selectedUserForRole, setSelectedUserForRole] = useState(null);
 
     // 3. Effect: Auth Check
@@ -56,8 +56,6 @@ const Dashboard = () => {
                         if (user && (user.roles?.includes('SuperAdmin') || user.roles?.includes('Super Admin'))) {
                             setMenuItems(mappedMenu);
                         } else {
-                            // Fallback or empty? Better to wait for permissions.
-                            // But if permissions is null, we might show nothing for regular users.
                             setMenuItems([]);
                         }
                     }
@@ -71,10 +69,9 @@ const Dashboard = () => {
         loadMenu();
     }, [token, apiBase, permissions]);
 
-    // 5. Data Fetching (Users, Roles) - Can be optimized to fetch only when needed
-    // For now, we fetch generic lists if permission allows
+    // 5. Data Fetching (Users, Roles)
     const fetchData = useCallback(async () => {
-        if (!permissions || !permissions.read_users) return; // Skip if no permission
+        if (!permissions || !permissions.read_users) return;
 
         setLoadingData(true);
         try {
@@ -85,12 +82,11 @@ const Dashboard = () => {
             if (userRes.ok) {
                 const data = await userRes.json();
                 setUsers(data);
-                // Derive admins if simple list, otherwise separate call needed for SuperAdmin
                 const adminList = data.filter(u => u.roles && (u.roles.includes("Admin") || u.roles.includes("SuperAdmin")));
                 setAdmins(adminList);
             }
 
-            // Fetch Roles (if permission allows or if needed for modals)
+            // Fetch Roles 
             if (permissions.view_roles || permissions.read_roles) {
                 const roleRes = await fetch(`${apiBase}/api/Roles`, {
                     headers: { Authorization: `Bearer ${token}` }
@@ -119,8 +115,6 @@ const Dashboard = () => {
     };
 
     const handleAddUser = async () => {
-        // ... (reuse logic from generic add user)
-        // For brevity, basic implementation:
         try {
             const response = await fetch(`${apiBase}/api/User`, {
                 method: 'POST',
@@ -132,12 +126,12 @@ const Dashboard = () => {
                     UserName: newUser.name,
                     Email: newUser.email,
                     Password: newUser.password,
-                    Role: "User" // Default
+                    Role: newUser.role || "User"
                 })
             });
             if (response.ok) {
                 setShowAddModal(false);
-                setNewUser({ name: "", email: "", password: "" });
+                setNewUser({ name: "", email: "", password: "", role: "User" });
                 fetchData();
             } else {
                 alert("Failed to add user");
@@ -148,7 +142,7 @@ const Dashboard = () => {
     const handleDeleteUser = async (userId) => {
         if (!window.confirm("Delete user?")) return;
         try {
-            await fetch(`${apiBase}/api/users/${userId}`, {
+            await fetch(`${apiBase}/api/User/${userId}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -157,7 +151,36 @@ const Dashboard = () => {
     }
 
     // 7. Render
-    if (!token) return null; // Or generic loading
+    if (!token) return null;
+
+    const handleAssignRole = (user) => {
+        setSelectedUserForRole(user);
+        setShowAssignModal(true);
+    };
+
+    const handleRoleUpdate = async (email, newRole) => {
+        try {
+            const response = await fetch(`${apiBase}/api/Roles/AssignRole`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ Email: email, RoleName: newRole })
+            });
+
+            if (response.ok) {
+                setShowAssignModal(false);
+                fetchData();
+            } else {
+                const data = await response.json();
+                alert(data.message || "Failed to assign role");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error assigning role");
+        }
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 flex">
@@ -176,26 +199,20 @@ const Dashboard = () => {
             {/* Main Content */}
             <div className="flex-1 overflow-auto">
                 <div className="p-6 md:p-8">
-                    {/* 
-                       DYNAMIC VIEW RENDERING 
-                       We pass all common props to the view. Specific views extract what they need.
-                     */}
                     {getViewComponent(activeView, {
-                        // Data
                         users,
                         admins,
-                        roles,
+                        roles: roles.filter(r => (r.Name || r.name || r) !== "SuperAdmin"), // Filter SuperAdmin here for views
                         totalUsers: users.length,
                         totalAdmins: admins.length,
-                        totalAccounts: users.length, // Placeholder logic
+                        totalAccounts: users.length,
 
-                        // Actions
                         onAddUser: permissions?.create_users ? () => setShowAddModal(true) : null,
                         onDelete: handleDeleteUser,
+                        onAssignRole: handleAssignRole,
                         onViewUsers: () => setActiveView('users'),
                         onViewCharts: () => setActiveView('charts'),
 
-                        // Context
                         permissions,
                         token,
                         apiBase
@@ -210,7 +227,16 @@ const Dashboard = () => {
                 setNewUser={setNewUser}
                 onClose={() => setShowAddModal(false)}
                 onSubmit={handleAddUser}
-                allowRoleSelection={false}
+                allowRoleSelection={true}
+                roles={roles.filter(r => (r.Name || r.name || r) !== "SuperAdmin")}
+            />
+
+            <AssignRoleModal
+                show={showAssignModal}
+                onClose={() => setShowAssignModal(false)}
+                user={selectedUserForRole}
+                roles={roles}
+                onAssign={handleRoleUpdate}
             />
         </div>
     );

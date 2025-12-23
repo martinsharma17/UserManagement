@@ -34,11 +34,33 @@ const ManagerDashboard = () => {
     const { token, logout, apiBase, user, permissions: contextPermissions } = useAuth();
     const navigate = useNavigate();
 
+    // State for dynamic menu
+    const [menuItems, setMenuItems] = useState([]);
+
     // Use permissions from AuthContext (fetched from backend)
     const permissions = contextPermissions || {};
 
-    // Get menu items based on permissions (must be before early return)
-    const menuItems = getManagerMenuItems(permissions);
+    // Fetch dynamic menu from backend
+    useEffect(() => {
+        const loadMenu = async () => {
+            if (token) {
+                // Import the utility dynamically or assumes it's available
+                const { fetchDynamicMenu, mapBackendMenuToSidebar, filterDynamicMenus } = await import('../utils/menuUtils.jsx');
+
+                const rawMenu = await fetchDynamicMenu(apiBase, token);
+                const mappedMenu = mapBackendMenuToSidebar(rawMenu);
+
+                // Filter based on permissions
+                if (contextPermissions) {
+                    const filteredMenu = filterDynamicMenus(mappedMenu, contextPermissions);
+                    setMenuItems(filteredMenu);
+                } else {
+                    setMenuItems(mappedMenu);
+                }
+            }
+        };
+        loadMenu();
+    }, [token, apiBase, contextPermissions]); // Re-run when permissions load
 
     // ⚠️ IMPORTANT: All hooks must be declared BEFORE any conditional returns
     const fetchUsers = useCallback(async () => {

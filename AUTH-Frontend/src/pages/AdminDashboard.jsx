@@ -29,8 +29,33 @@ const AdminDashboard = () => {
     const { token, logout, apiBase, user, permissions: authPermissions } = useAuth();
     const navigate = useNavigate();
 
-    // Get menu items based on permissions from AuthContext
-    const menuItems = getAdminMenuItems(authPermissions || {});
+    // State for dynamic menu
+    const [menuItems, setMenuItems] = useState([]);
+
+
+
+    // Fetch dynamic menu from backend
+    useEffect(() => {
+        const loadMenu = async () => {
+            if (token) {
+                // Import the utility dynamically or assumes it's available
+                const { fetchDynamicMenu, mapBackendMenuToSidebar, filterDynamicMenus } = await import('../utils/menuUtils.jsx');
+
+                const rawMenu = await fetchDynamicMenu(apiBase, token);
+                const mappedMenu = mapBackendMenuToSidebar(rawMenu);
+
+                // Filter based on permissions
+                // If authPermissions is null (loading), we might show nothing or default
+                if (authPermissions) {
+                    const filteredMenu = filterDynamicMenus(mappedMenu, authPermissions);
+                    setMenuItems(filteredMenu);
+                } else {
+                    setMenuItems(mappedMenu); // Fallback: show all (safe if backend maps items correctly, but better to filter)
+                }
+            }
+        };
+        loadMenu();
+    }, [token, apiBase, authPermissions]); // Re-run when permissions load
 
     const fetchUsers = useCallback(async () => {
         setLoading(true);

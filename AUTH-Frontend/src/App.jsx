@@ -13,13 +13,9 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import LoginForm from './components/auth/LoginForm.jsx';
 import RegisterForm from './components/auth/RegisterForm.jsx';
-import Dashboard from './components/Dashboard.jsx';
+import Dashboard from './pages/Dashboard.jsx';
 
-// Role-based dashboards
-import SuperAdminDashboard from "./pages/SuperAdminDashboard.jsx";
-import AdminDashboard from "./pages/AdminDashboard.jsx";
-import ManagerDashboard from "./pages/ManagerDashboard.jsx";
-import UserDashboard from "./pages/UserDashboard.jsx";
+
 
 // Password reset pages
 import ForgotPassword from './pages/ForgotPassword.jsx';
@@ -107,21 +103,9 @@ function AppContent() {
             element={
               token ? (
                 // USER IS LOGGED IN
-                isSuperAdmin ? (
-                  <SuperAdminDashboard apiBase={API_BASE_URL} token={token} />
-                ) : isAdmin ? (
-                  <ErrorBoundary>
-                    <AdminDashboard apiBase={API_BASE_URL} token={token} />
-                  </ErrorBoundary>
-                ) : isManager ? (
-                  <ManagerDashboard apiBase={API_BASE_URL} token={token} />
-                ) : (
-                  // Universal Fallback:
-                  // For any other role (e.g. "User", or custom dynamic roles like "kamwalibai"),
-                  // we render the Generic/User Dashboard.
-                  // This dashboard will fetch its own permissions dynamically based on the policy system.
-                  <UserDashboard />
-                )
+                // Use the Unified Dashboard for ALL roles.
+                // It adapts its sidebar and views based on dynamic permissions.
+                <Dashboard />
               ) : (
                 // USER IS NOT LOGGED IN -> Redirect to Login
                 <Navigate to="/login" />

@@ -215,17 +215,26 @@ namespace AUTHApi.Controllers
             var roleExists = await _roleManager.RoleExistsAsync(model.RoleName);
             if (!roleExists) return NotFound(new { success = false, message = "Role not found" });
 
-            // Execution
-            var isInRole = await _userManager.IsInRoleAsync(user, model.RoleName);
-            if (isInRole)
+            // Execution: Replace Roles logic
+            // 1. Get current roles
+            var currentRoles = await _userManager.GetRolesAsync(user);
+
+            // 2. Remove all current roles
+            if (currentRoles.Any())
             {
-                return BadRequest(new { success = false, message = "User already has this role" });
+                var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                if (!removeResult.Succeeded)
+                {
+                    return BadRequest(new { success = false, message = "Failed to remove existing roles", errors = removeResult.Errors });
+                }
             }
 
+            // 3. Add new role
             var result = await _userManager.AddToRoleAsync(user, model.RoleName);
+            
             if (result.Succeeded)
             {
-                return Ok(new { success = true, message = $"Role '{model.RoleName}' assigned to user successfully" });
+                return Ok(new { success = true, message = $"User role updated to '{model.RoleName}' successfully" });
             }
 
             return BadRequest(new { success = false, message = "Failed to assign role", errors = result.Errors });

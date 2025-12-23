@@ -44,34 +44,33 @@ public class UserController : ControllerBase
             var userRoles = await _userManager.GetRolesAsync(user);
             
             // Permission-based filtering logic:
-            // - SuperAdmin sees everyone
-            // - Admin sees non-SuperAdmin users only
-            // - Manager sees only regular users (not Admin, Manager, or SuperAdmin)
-            // - User and custom roles NEVER see SuperAdmin
+            // - ALWAYS hide SuperAdmin from the management list as per user request
+            // - SuperAdmin sees everyone else
+            // - Admin sees managers and regular users
+            // - Manager sees only regular users
             
+            if (userRoles.Contains("SuperAdmin")) continue;
+
             bool canView = false;
             
             if (currentUserRoles.Contains("SuperAdmin"))
             {
-                canView = true; // SuperAdmin sees all users including other SuperAdmins
+                canView = true; 
             }
             else if (currentUserRoles.Contains("Admin"))
             {
-                canView = !userRoles.Contains("SuperAdmin"); // Admin sees all except SuperAdmin
+                canView = true; // Admin sees all non-SuperAdmins (already filtered above)
             }
             else if (currentUserRoles.Contains("Manager"))
             {
                 // Manager sees only regular users (no privileged roles)
-                canView = !userRoles.Contains("SuperAdmin") 
-                       && !userRoles.Contains("Admin") 
-                       && !userRoles.Contains("Manager");
+                canView = !userRoles.Contains("Admin") && !userRoles.Contains("Manager");
             }
             else
             {
-                // For User and custom roles: NEVER show SuperAdmin, Admin, or Manager
-                canView = !userRoles.Contains("SuperAdmin")
-                       && !userRoles.Contains("Admin")
-                       && !userRoles.Contains("Manager");
+                // For User and custom roles: show nothing or limited? 
+                // Usually Users can't see other users unless structured.
+                canView = false;
             }
             
             if (canView)
@@ -163,6 +162,27 @@ public class UserController : ControllerBase
             await _userManager.AddToRoleAsync(user, model.Role);
 
         return Ok(new { message = "User created", user.Id, user.UserName, user.Email });
+    }
+
+    // DELETE: api/User/{id}
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "SuperAdmin,Admin")]
+    public async Task<IActionResult> DeleteUser(string id)
+    {
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null) return NotFound();
+
+        // Prevent self-deletion
+        var currentUser = await _userManager.GetUserAsync(User);
+        if (currentUser?.Id == id) return BadRequest("You cannot delete yourself.");
+
+        var roles = await _userManager.GetRolesAsync(user);
+        if (roles.Contains("SuperAdmin")) return Forbid("SuperAdmin users cannot be deleted via the API.");
+
+        var result = await _userManager.DeleteAsync(user);
+        if (!result.Succeeded) return BadRequest(result.Errors);
+
+        return Ok(new { message = "User deleted successfully" });
     }
 
     public class UpdateProfileModel
