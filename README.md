@@ -157,10 +157,48 @@ cd UserManagement
 ## 📂 Key Files to Review
 
 *   **Backend**:
-    *   `Program.cs`: Configuration central (Auth, DB, Swagger).
-    *   `Controllers/UserAuthController.cs`: Login & Register logic.
-    *   `Controllers/RolesController.cs`: Role management logic.
+---
 
-*   **Frontend**:
-    *   `src/context/AuthContext.jsx`: Auth state management.
-    *   `src/App.jsx`: Routing & Role checks.
+## 🛠 How to Add a New Menu Item (Sidebar)
+
+Adding a new page to the sidebar requires a 3-step process to ensure the icon, the page content, and the database link are all synchronized.
+
+### 1. Define the Icon (Frontend)
+Open `AUTH-Frontend/src/components/dashboard/SidebarIcons.jsx` and export a new SVG component.
+```javascript
+export const MyNewIcon = ({ className = "w-5 h-5" }) => (
+    <svg className={className} ...> ... </svg>
+);
+```
+
+### 2. Map the View (Frontend)
+Open `AUTH-Frontend/src/components/dashboard/ViewMapper.jsx` and add a case for your new `ViewId`.
+```javascript
+case 'my_new_view': 
+    return <MyNewComponent {...props} />;
+```
+
+### 3. Seed the Menu (Backend)
+Open `AUTHApi/Data/MenuSeeder.cs` and add your new item to the `items` list.
+```csharp
+new MenuItem { 
+    Title = "My New Page", 
+    ViewId = "my_new_view", // Must match ViewMapper
+    Icon = "MyNewIcon",    // Must match SidebarIcons
+    Permission = null,      // Use NULL for public, or a string for restricted access
+    Order = 15              // Sorting position
+}
+
+
+form databse   : 
+
+INSERT INTO MenuItems (Title, ViewId, Icon, Permission, [Order], IsVisible, ParentId)
+VALUES ('Support', 'support_view', 'SupportIcon', NULL, 15, 1, NULL);
+
+
+DELETE FROM MenuItems
+```
+**Restart the Backend**: The seeder wipes and re-creates the menu table on every startup during development to stay in sync with your code.
+
+> [!TIP]
+> **Direct Database Alternative**: You can also insert directly into the `MenuItems` table via SQL, but remember that the Seeder will overwrite manual SQL changes on the next backend restart unless you comment out the `context.MenuItems.RemoveRange` lines.

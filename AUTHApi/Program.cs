@@ -205,10 +205,10 @@ internal class Program
         app.UseHttpsRedirection(); // Redirect HTTP to HTTPS
         app.UseCors("AllowSpecificOrigin"); // Enable CORS (Must be before Auth)
 
-        // // Enable Authentication (Who are you?)
-        // app.UseAuthentication();
-        // // Enable Authorization (Are you allowed here?)
-        // app.UseAuthorization();
+        // Enable Authentication (Who are you?)
+        app.UseAuthentication();
+        // Enable Authorization (Are you allowed here?)
+        app.UseAuthorization();
 
         // Map controller endpoints
         app.MapControllers();

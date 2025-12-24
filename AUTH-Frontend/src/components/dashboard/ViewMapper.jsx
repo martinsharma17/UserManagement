@@ -11,6 +11,7 @@ import ProjectSettingsDummy from './ProjectSettingsDummy.jsx';
 import AdminResourceView from './admin/AdminResourceView.jsx';
 import TaskListView from './tasks/TaskListView.jsx';
 import TaskKanbanView from './tasks/TaskKanbanView.jsx';
+import UserDetailsForm from './user/UserDetailsForm.jsx';
 
 /**
  * Maps a viewId (from database/menu) to a React Component.
@@ -21,6 +22,12 @@ export const getViewComponent = (viewId, props) => {
         // --- Core Dashboards ---
         case 'dashboard':
             return <AdminDashboardView {...props} />;
+        case 'user_profile':
+            return <UserDetailsForm {...props} />;
+
+
+        case 'support_view':  // This ID must match the 'ViewId' in the backend
+            return <SupportComponent {...props} />;
 
         // --- Users & Roles ---
         case 'users':
@@ -32,6 +39,11 @@ export const getViewComponent = (viewId, props) => {
             return <PolicyEditorView {...props} />;
         case 'access':
             return <AccessManagementView {...props} />;
+
+//  mapped viewId 'support_view' to SupportComponent
+// case 'support_view': 
+//     return <SupportComponent {...props} />;
+
 
         // --- Analytics ---
         case 'charts':

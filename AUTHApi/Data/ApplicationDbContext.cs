@@ -6,6 +6,8 @@ namespace AUTHApi.Data
     public class ApplicationDbContext :IdentityDbContext<ApplicationUser>
     {
         public DbSet<MenuItem> MenuItems { get; set; }
+        public DbSet<UserDetails> UserDetails { get; set; }
+        public DbSet<UserImage> UserImages { get; set; }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
