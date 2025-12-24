@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth } from '../../../context/AuthContext';
 
 const UserDetailsForm = () => {
+    const { token, apiBase } = useAuth();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
+    const [images, setImages] = useState({
+        mapImage: null,
+        idImage: null
+    });
     const [formData, setFormData] = useState({
         fullName: '',
         dateOfBirthAd: '',
@@ -64,10 +70,30 @@ const UserDetailsForm = () => {
 
     useEffect(() => {
         const fetchDetails = async () => {
+            if (!token) return;
             try {
-                const response = await axios.get('/api/userdetails');
+                const response = await axios.get(`${apiBase}/api/UserDetails`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (response.data) {
-                    setFormData(response.data);
+                    // Sanitize null values to empty strings to avoid React warnings
+                    const sanitizedData = { ...response.data };
+                    Object.keys(sanitizedData).forEach(key => {
+                        if (sanitizedData[key] === null) {
+                            sanitizedData[key] = '';
+                        }
+                    });
+                    setFormData(sanitizedData);
+
+                    // Pre-fill images if they exist
+                    if (response.data.userImages) {
+                        const map = response.data.userImages.find(img => img.imageType === 'Location Map');
+                        const id = response.data.userImages.find(img => img.imageType === 'ID Proof');
+                        setImages({
+                            mapImage: map ? map.imageUrl : null,
+                            idImage: id ? id.imageUrl : null
+                        });
+                    }
                 }
             } catch (error) {
                 console.error("Error fetching user details:", error);
@@ -75,6 +101,20 @@ const UserDetailsForm = () => {
         };
         fetchDetails();
     }, []);
+
+    const handleFileChange = (e) => {
+        const { name, files } = e.target;
+        if (files && files[0]) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImages(prev => ({
+                    ...prev,
+                    [name]: reader.result // Base64 string
+                }));
+            };
+            reader.readAsDataURL(files[0]);
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -91,11 +131,29 @@ const UserDetailsForm = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            await axios.post('/api/userdetails', formData);
-            alert('User details saved successfully!');
+            // Sanitize payload: Remove navigation properties and IDs to avoid EF issues
+            const { user, userImages, applicationUserId, userId, ...cleanData } = formData;
+
+            const payload = {
+                ...cleanData,
+                userImages: [
+                    { imageType: 'Location Map', imageUrl: images.mapImage },
+                    { imageType: 'ID Proof', imageUrl: images.idImage }
+                ].filter(img => img.imageUrl !== null && img.imageUrl !== '')
+            };
+
+            const response = await axios.post(`${apiBase}/api/UserDetails`, payload, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            alert('User details and images saved successfully!');
         } catch (error) {
             console.error("Error saving user details:", error);
-            alert('Failed to save user details.');
+            const errorMessage = error.response?.data?.message || error.response?.data || error.message || 'Unknown error occurred';
+            alert(`Failed to save user details: ${errorMessage}`);
+
+            if (error.response?.data?.errors) {
+                console.table(error.response.data.errors);
+            }
         } finally {
             setLoading(false);
         }
@@ -110,15 +168,15 @@ const UserDetailsForm = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-400">Full Name</label>
-                                <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" required />
+                                <input type="text" name="fullName" value={formData.fullName || ''} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" required />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400">Date of Birth (AD)</label>
-                                <input type="date" name="dateOfBirthAd" value={formData.dateOfBirthAd} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
+                                <input type="date" name="dateOfBirthAd" value={formData.dateOfBirthAd || ''} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400">Gender</label>
-                                <select name="gender" value={formData.gender} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2">
+                                <select name="gender" value={formData.gender || ''} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2">
                                     <option value="">Select Gender</option>
                                     <option value="Male">Male</option>
                                     <option value="Female">Female</option>
@@ -127,15 +185,15 @@ const UserDetailsForm = () => {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400">Nationality</label>
-                                <input type="text" name="nationality" value={formData.nationality} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
+                                <input type="text" name="nationality" value={formData.nationality || ''} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400">Citizenship No</label>
-                                <input type="text" name="citizenshipNumber" value={formData.citizenshipNumber} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
+                                <input type="text" name="citizenshipNumber" value={formData.citizenshipNumber || ''} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400">PAN Number</label>
-                                <input type="text" name="panNumber" value={formData.panNumber} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
+                                <input type="text" name="panNumber" value={formData.panNumber || ''} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
                             </div>
                         </div>
                     </div>
@@ -148,28 +206,28 @@ const UserDetailsForm = () => {
                             <div className="col-span-2"><h4 className="text-md font-medium text-gray-300">Current Address</h4></div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400">Municipality</label>
-                                <input type="text" name="currentMunicipality" value={formData.currentMunicipality} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
+                                <input type="text" name="currentMunicipality" value={formData.currentMunicipality || ''} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400">District</label>
-                                <input type="text" name="currentDistrict" value={formData.currentDistrict} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
+                                <input type="text" name="currentDistrict" value={formData.currentDistrict || ''} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
                             </div>
                             <div className="col-span-2"><h4 className="text-md font-medium text-gray-300">Permanent Address</h4></div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400">Municipality</label>
-                                <input type="text" name="permanentMunicipality" value={formData.permanentMunicipality} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
+                                <input type="text" name="permanentMunicipality" value={formData.permanentMunicipality || ''} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400">District</label>
-                                <input type="text" name="permanentDistrict" value={formData.permanentDistrict} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
+                                <input type="text" name="permanentDistrict" value={formData.permanentDistrict || ''} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400">Contact Number</label>
-                                <input type="text" name="contactNumber" value={formData.contactNumber} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
+                                <input type="text" name="contactNumber" value={formData.contactNumber || ''} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400">Email Address</label>
-                                <input type="email" name="emailAddress" value={formData.emailAddress} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
+                                <input type="email" name="emailAddress" value={formData.emailAddress || ''} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
                             </div>
                         </div>
                     </div>
@@ -181,20 +239,20 @@ const UserDetailsForm = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-400">Father's Name</label>
-                                <input type="text" name="fatherName" value={formData.fatherName} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
+                                <input type="text" name="fatherName" value={formData.fatherName || ''} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400">Mother's Name</label>
-                                <input type="text" name="motherName" value={formData.motherName} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
+                                <input type="text" name="motherName" value={formData.motherName || ''} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
                             </div>
                             <div className="col-span-2"><h4 className="text-md font-medium text-gray-300">Bank Information</h4></div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400">Bank Name</label>
-                                <input type="text" name="bankName" value={formData.bankName} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
+                                <input type="text" name="bankName" value={formData.bankName || ''} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-400">Account Number</label>
-                                <input type="text" name="accountNumber" value={formData.accountNumber} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
+                                <input type="text" name="accountNumber" value={formData.accountNumber || ''} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" />
                             </div>
                         </div>
                     </div>
@@ -213,11 +271,11 @@ const UserDetailsForm = () => {
                                 </div>
                             </div>
                             {formData.involvedInOtherInvestments && (
-                                <textarea name="investmentDetails" value={formData.investmentDetails} onChange={handleChange} placeholder="Details of other investments..." className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" rows="3"></textarea>
+                                <textarea name="investmentDetails" value={formData.investmentDetails || ''} onChange={handleChange} placeholder="Details of other investments..." className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" rows="3"></textarea>
                             )}
                             <div className="pt-4">
                                 <label className="block text-sm font-medium text-gray-400">Legal Declaration</label>
-                                <textarea name="legalDeclaration" value={formData.legalDeclaration} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" rows="4" placeholder="I hereby declare that..."></textarea>
+                                <textarea name="legalDeclaration" value={formData.legalDeclaration || ''} onChange={handleChange} className="mt-1 block w-full bg-gray-800 border-gray-700 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-white p-2" rows="4" placeholder="I hereby declare that..."></textarea>
                             </div>
                             <div className="flex items-start">
                                 <div className="flex items-center h-5">
@@ -225,6 +283,50 @@ const UserDetailsForm = () => {
                                 </div>
                                 <div className="ml-3 text-sm">
                                     <label className="font-medium text-gray-300">I agree to the legal consent terms.</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 5:
+                return (
+                    <div className="space-y-4">
+                        <h3 className="text-xl font-semibold mb-4 text-indigo-400">Document Uploads</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-400">Location Map</label>
+                                <div className="border-2 border-dashed border-gray-700 rounded-lg p-4 text-center hover:border-indigo-500 transition-colors">
+                                    <input type="file" name="mapImage" onChange={handleFileChange} className="hidden" id="map-upload" accept="image/*" />
+                                    <label htmlFor="map-upload" className="cursor-pointer">
+                                        {images.mapImage ? (
+                                            <img src={images.mapImage} alt="Map Preview" className="mx-auto max-h-32 rounded" />
+                                        ) : (
+                                            <div className="text-gray-500">
+                                                <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                                <p className="mt-1">Click to upload map</p>
+                                            </div>
+                                        )}
+                                    </label>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-400">Identity Proof (Citizenship/Passport)</label>
+                                <div className="border-2 border-dashed border-gray-700 rounded-lg p-4 text-center hover:border-indigo-500 transition-colors">
+                                    <input type="file" name="idImage" onChange={handleFileChange} className="hidden" id="id-upload" accept="image/*" />
+                                    <label htmlFor="id-upload" className="cursor-pointer">
+                                        {images.idImage ? (
+                                            <img src={images.idImage} alt="ID Preview" className="mx-auto max-h-32 rounded" />
+                                        ) : (
+                                            <div className="text-gray-500">
+                                                <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                                <p className="mt-1">Click to upload ID proof</p>
+                                            </div>
+                                        )}
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -240,10 +342,10 @@ const UserDetailsForm = () => {
             <div className="mb-8">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-bold text-white">User Details Registration</h2>
-                    <span className="text-indigo-500 font-medium">Step {step} of 4</span>
+                    <span className="text-indigo-500 font-medium">Step {step} of 5</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-2.5">
-                    <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: `${(step / 4) * 100}%` }}></div>
+                    <div className="bg-indigo-600 h-2.5 rounded-full" style={{ width: `${(step / 5) * 100}%` }}></div>
                 </div>
             </div>
 
@@ -256,7 +358,7 @@ const UserDetailsForm = () => {
                             Previous
                         </button>
                     )}
-                    {step < 4 ? (
+                    {step < 5 ? (
                         <button type="button" onClick={handleNext} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg ml-auto transition-colors duration-200">
                             Next
                         </button>

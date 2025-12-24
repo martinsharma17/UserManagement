@@ -31,38 +31,77 @@ namespace AUTHApi.Controllers
 
             if (details == null)
             {
-                return NotFound("User details not found.");
+                return Ok();
             }
 
-            return details;
+            return Ok(details);
         }
 
         [HttpPost]
+        [DisableRequestSizeLimit]
         public async Task<ActionResult<UserDetails>> Post([FromBody] UserDetails details)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
-
-            var existingDetails = await _context.UserDetails
-                .FirstOrDefaultAsync(d => d.ApplicationUserId == userId);
-
-            if (existingDetails == null)
+            try
             {
-                details.ApplicationUserId = userId;
-                details.CreatedAt = DateTime.UtcNow;
-                details.UpdatedAt = DateTime.UtcNow;
-                _context.UserDetails.Add(details);
-            }
-            else
-            {
-                // Update existing details manually to avoid replacing the whole object if needed
-                // For simplicity, we can use reflection or a library like AutoMapper, but here we do it explicitly
-                _context.Entry(existingDetails).CurrentValues.SetValues(details);
-                existingDetails.UpdatedAt = DateTime.UtcNow;
-            }
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            await _context.SaveChangesAsync();
-            return Ok(existingDetails ?? details);
+                var existingDetails = await _context.UserDetails
+                    .Include(d => d.UserImages)
+                    .FirstOrDefaultAsync(d => d.ApplicationUserId == userId);
+
+                if (existingDetails == null)
+                {
+                    details.ApplicationUserId = userId;
+                    details.CreatedAt = DateTime.UtcNow;
+                    details.UpdatedAt = DateTime.UtcNow;
+                    
+                    // Ensure nested images have correct IDs
+                    if (details.UserImages != null)
+                    {
+                        foreach (var img in details.UserImages)
+                        {
+                            img.UploadedAt = DateTime.UtcNow;
+                        }
+                    }
+
+                    _context.UserDetails.Add(details);
+                    await _context.SaveChangesAsync();
+                    return Ok(details);
+                }
+                else
+                {
+                    // Update scalar properties except IDs
+                    _context.Entry(existingDetails).CurrentValues.SetValues(details);
+                    
+                    // Protect critical fields
+                    existingDetails.ApplicationUserId = userId;
+                    existingDetails.UpdatedAt = DateTime.UtcNow;
+
+                    // Handle nested images: Wipe and replace
+                    if (details.UserImages != null)
+                    {
+                        if (existingDetails.UserImages != null && existingDetails.UserImages.Any())
+                        {
+                            _context.UserImages.RemoveRange(existingDetails.UserImages);
+                        }
+
+                        foreach (var img in details.UserImages)
+                        {
+                            img.UserDetailsId = existingDetails.UserId;
+                            img.UploadedAt = DateTime.UtcNow;
+                            _context.UserImages.Add(img);
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
+                    return Ok(existingDetails);
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "Error saving user details.", error = ex.Message, innerError = ex.InnerException?.Message });
+            }
         }
 
         [HttpPost("images")]
