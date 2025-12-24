@@ -48,7 +48,7 @@ internal class Program
                 builder =>
                 {
                     // Allow requests from React Frontend running on localhost:5173
-                    builder.WithOrigins("http://localhost:5173")
+                    builder.WithOrigins("http://localhost:5173","http://localhost:3000")
                     .AllowAnyHeader() // Allow any HTTP headers (e.g., Authorization, Content-Type)
                     .AllowAnyMethod(); // Allow any HTTP methods (GET, POST, PUT, DELETE, etc.)
                 });
@@ -201,9 +201,9 @@ internal class Program
                 options.SwaggerEndpoint("/swagger/v1/swagger.json", "AUTHApi");
             });
         }
-
+        app.UseCors("AllowSpecificOrigin");
         app.UseHttpsRedirection(); // Redirect HTTP to HTTPS
-        app.UseCors("AllowSpecificOrigin"); // Enable CORS (Must be before Auth)
+        // Enable CORS (Must be before Auth)
 
         // Enable Authentication (Who are you?)
         app.UseAuthentication();
