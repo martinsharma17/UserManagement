@@ -122,6 +122,17 @@ namespace AUTHApi.Core.Security
             public const string Sidebar = "Permissions.Backup.Sidebar";
         }
 
+        public static class Kyc
+        {
+            public const string View = "Permissions.Kyc.View";
+            public const string Create = "Permissions.Kyc.Create";
+            public const string Edit = "Permissions.Kyc.Edit";
+            public const string Delete = "Permissions.Kyc.Delete";
+            public const string Verify = "Permissions.Kyc.Verify";   // Maker verification
+            public const string Approve = "Permissions.Kyc.Approve"; // Checker approval
+            public const string Sidebar = "Permissions.Kyc.Sidebar";
+        }
+
         // Helper to get all permissions for seeding or listing
         public static List<string> GetAllPermissions()
         {
@@ -144,7 +155,8 @@ namespace AUTHApi.Core.Security
                 Settings.View, Settings.Sidebar,
                 Notifications.View, Notifications.Sidebar,
                 Security.View, Security.Sidebar,
-                Backup.View, Backup.Sidebar
+                Backup.View, Backup.Sidebar,
+                Kyc.View, Kyc.Create, Kyc.Edit, Kyc.Delete, Kyc.Verify, Kyc.Approve, Kyc.Sidebar
             };
         }
     }
